@@ -1,0 +1,220 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum ProductStatus {
+  AVAILABLE
+  UNAVAILABLE
+}
+
+enum OrderStatus {
+  PENDING
+  PAID
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+enum PaymentMethod {
+  PIX
+  CARD
+}
+
+enum PaymentStatus {
+  PENDING
+  CONFIRMED
+  FAILED
+  REFUNDED
+}
+
+enum CouponType {
+  PERCENT
+  FIXED
+}
+
+model Product {
+  id              String            @id @default(cuid())
+  name            String
+  slug            String            @unique
+  sku             String            @unique
+  description     String            @db.Text
+  price           Decimal           @db.Decimal(10, 2)
+  compareAtPrice  Decimal?          @db.Decimal(10, 2)
+  discountPercent Int?
+  stock           Int               @default(0)
+  status          ProductStatus     @default(AVAILABLE)
+  weight          Decimal           @db.Decimal(10, 2)
+  featured        Boolean           @default(false)
+  isBestseller    Boolean           @default(false)
+  isNew           Boolean           @default(false)
+  categoryId      String
+  category        Category          @relation(fields: [categoryId], references: [id])
+  brandId         String?
+  brand           Brand?            @relation(fields: [brandId], references: [id])
+  images          ProductImage[]
+  variations      ProductVariation[]
+  favorites       Favorite[]
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+}
+
+model ProductVariation {
+  id             String   @id @default(cuid())
+  name           String
+  sku            String
+  price          Decimal  @db.Decimal(10, 2)
+  compareAtPrice Decimal? @db.Decimal(10, 2)
+  stock          Int      @default(0)
+  productId      String
+  product        Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+}
+
+model Category {
+  id          String     @id @default(cuid())
+  name        String
+  slug        String     @unique
+  parentId    String?
+  parent      Category?  @relation("CategoryTree", fields: [parentId], references: [id])
+  children    Category[] @relation("CategoryTree")
+  position    Int        @default(0)
+  description String?    @db.Text
+  products    Product[]
+}
+
+model Brand {
+  id       String    @id @default(cuid())
+  name     String
+  slug     String    @unique
+  logoUrl  String?
+  products Product[]
+}
+
+model ProductImage {
+  id        String  @id @default(cuid())
+  url       String
+  alt       String?
+  position  Int     @default(0)
+  isMain    Boolean @default(false)
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+}
+
+model Order {
+  id                   String        @id @default(cuid())
+  orderNumber          Int           @unique @default(autoincrement())
+  status               OrderStatus   @default(PENDING)
+  customerName         String
+  email                String
+  phone                String
+  cpf                  String
+  shippingCep          String
+  shippingStreet       String
+  shippingNumber       String
+  shippingComplement   String?
+  shippingNeighborhood String
+  shippingCity         String
+  shippingState        String
+  shippingMethod       String
+  shippingCost         Decimal       @db.Decimal(10, 2)
+  subtotal             Decimal       @db.Decimal(10, 2)
+  discount             Decimal       @default(0) @db.Decimal(10, 2)
+  total                Decimal       @db.Decimal(10, 2)
+  couponCode           String?
+  paymentMethod        PaymentMethod
+  paymentStatus        PaymentStatus @default(PENDING)
+  paymentExternalId    String?
+  customerId           String
+  customer             Customer      @relation(fields: [customerId], references: [id])
+  items                OrderItem[]
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime      @updatedAt
+}
+
+model OrderItem {
+  id            String  @id @default(cuid())
+  orderId       String
+  order         Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId     String
+  productName   String
+  productSku    String
+  variationName String?
+  quantity      Int
+  unitPrice     Decimal @db.Decimal(10, 2)
+  totalPrice    Decimal @db.Decimal(10, 2)
+}
+
+model Customer {
+  id           String            @id @default(cuid())
+  name         String
+  email        String            @unique
+  phone        String?
+  cpf          String?
+  passwordHash String
+  addresses    CustomerAddress[]
+  orders       Order[]
+  favorites    Favorite[]
+  createdAt    DateTime          @default(now())
+}
+
+model CustomerAddress {
+  id           String   @id @default(cuid())
+  customerId   String
+  customer     Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  label        String   @default("Casa")
+  cep          String
+  street       String
+  number       String
+  complement   String?
+  neighborhood String
+  city         String
+  state        String
+  isDefault    Boolean  @default(false)
+}
+
+model Favorite {
+  id         String   @id @default(cuid())
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  productId  String
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+
+  @@unique([customerId, productId])
+}
+
+model NewsletterSubscriber {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  discountCode String
+  createdAt    DateTime @default(now())
+}
+
+model Coupon {
+  id              String     @id @default(cuid())
+  code            String     @unique
+  type            CouponType
+  discountPercent Int?
+  discountValue   Decimal?   @db.Decimal(10, 2)
+  minOrderValue   Decimal?   @db.Decimal(10, 2)
+  usageLimit      Int?
+  usageCount      Int        @default(0)
+  validFrom       DateTime
+  validUntil      DateTime
+  active          Boolean    @default(true)
+}
+
+model Banner {
+  id        String   @id @default(cuid())
+  title     String
+  imageUrl  String
+  link      String
+  position  Int      @default(0)
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+}
