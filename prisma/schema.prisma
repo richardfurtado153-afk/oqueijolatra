@@ -60,6 +60,7 @@ model Product {
   images          ProductImage[]
   variations      ProductVariation[]
   favorites       Favorite[]
+  reviews         Review[]
   createdAt       DateTime          @default(now())
   updatedAt       DateTime          @updatedAt
 }
@@ -161,6 +162,7 @@ model Customer {
   addresses    CustomerAddress[]
   orders       Order[]
   favorites    Favorite[]
+  reviews      Review[]
   createdAt    DateTime          @default(now())
 }
 
@@ -228,4 +230,19 @@ model PasswordResetToken {
   expiresAt DateTime
   used      Boolean  @default(false)
   createdAt DateTime @default(now())
+}
+
+model Review {
+  id         String   @id @default(cuid())
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  productId  String
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  rating     Int
+  title      String
+  body       String
+  approved   Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  @@unique([customerId, productId])
 }

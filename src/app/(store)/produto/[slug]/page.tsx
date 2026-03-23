@@ -9,6 +9,7 @@ import ShippingCalculator from '@/components/product/ShippingCalculator'
 import RelatedProducts from '@/components/product/RelatedProducts'
 import RecentlyViewed from '@/components/ui/RecentlyViewed'
 import ProductPageTracker from './ProductPageTracker'
+import ProductReviews from '@/components/ProductReviews'
 
 interface ProductPageProps {
   params: Promise<{ slug: string }>
@@ -239,6 +240,9 @@ export default async function ProductPage({ params }: ProductPageProps) {
       <div className="mt-10">
         <RelatedProducts products={relatedProducts} />
       </div>
+
+      {/* Reviews */}
+      <ProductReviews productId={product.id} />
 
       {/* Recently Viewed sidebar */}
       <div className="mt-10 max-w-xs">
