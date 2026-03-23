@@ -281,6 +281,20 @@ async function main() {
   })
   console.log('Created 3 banners.')
 
+  const bcrypt = (await import('bcryptjs')).default
+  const existingAdmin = await prisma.customer.findUnique({ where: { email: 'admin@queijolatra.com.br' } })
+  if (!existingAdmin) {
+    await prisma.customer.create({
+      data: {
+        name: 'Administrador',
+        email: 'admin@queijolatra.com.br',
+        passwordHash: await bcrypt.hash('admin123456', 10),
+        isAdmin: true,
+      },
+    })
+    console.log('Admin user created: admin@queijolatra.com.br / admin123456')
+  }
+
   console.log('Seeding complete!')
 }
 

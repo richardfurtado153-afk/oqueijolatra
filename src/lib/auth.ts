@@ -19,7 +19,7 @@ export const authOptions: NextAuthOptions = {
         if (!customer) return null
         const isValid = await bcrypt.compare(credentials.password, customer.passwordHash)
         if (!isValid) return null
-        return { id: customer.id, name: customer.name, email: customer.email }
+        return { id: customer.id, name: customer.name, email: customer.email, isAdmin: customer.isAdmin }
       },
     }),
   ],
@@ -27,11 +27,17 @@ export const authOptions: NextAuthOptions = {
   pages: { signIn: '/conta/login' },
   callbacks: {
     async jwt({ token, user }) {
-      if (user) token.id = user.id
+      if (user) {
+        token.id = user.id
+        token.isAdmin = (user as any).isAdmin ?? false
+      }
       return token
     },
     async session({ session, token }) {
-      if (session.user) (session.user as any).id = token.id
+      if (session.user) {
+        (session.user as any).id = token.id
+        ;(session.user as any).isAdmin = token.isAdmin
+      }
       return session
     },
   },
