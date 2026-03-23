@@ -1,5 +1,6 @@
 'use client'
 
+import React from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import Badge from '@/components/ui/Badge'
@@ -21,6 +22,7 @@ interface ProductCardProps {
 
 export default function ProductCard({ product }: ProductCardProps) {
   const addItem = useCartStore((s) => s.addItem)
+  const [imgError, setImgError] = React.useState(false)
 
   const discount =
     product.compareAtPrice && product.compareAtPrice > product.price
@@ -43,14 +45,21 @@ export default function ProductCard({ product }: ProductCardProps) {
       <div className="relative w-full aspect-square">
         {discount && <Badge percentage={discount} />}
         <Link href={`/produto/${product.slug}`} className="relative block w-full h-full">
-          <Image
-            src={product.image}
-            alt={product.name}
-            fill
-            className="object-cover"
-            sizes="220px"
-            unoptimized={product.image.startsWith('http')}
-          />
+          {imgError ? (
+            <div className="absolute inset-0 bg-stone-100 flex items-center justify-center text-stone-300 text-5xl">
+              🧀
+            </div>
+          ) : (
+            <Image
+              src={product.image}
+              alt={product.name}
+              fill
+              className="object-cover"
+              sizes="220px"
+              unoptimized
+              onError={() => setImgError(true)}
+            />
+          )}
         </Link>
       </div>
 
