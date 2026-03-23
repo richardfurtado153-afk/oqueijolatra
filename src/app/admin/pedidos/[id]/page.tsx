@@ -69,16 +69,32 @@ export default async function AdminOrderDetail({ params }: { params: Promise<{ i
         <h2 className="font-semibold mb-3 text-stone-700">Atualizar Status</h2>
         <form action={async (fd: FormData) => {
           'use server'
-          await updateOrderStatus(fd.get('orderId') as string, fd.get('status') as string)
-        }} className="flex gap-3">
+          await updateOrderStatus(
+            fd.get('orderId') as string,
+            fd.get('status') as string,
+            fd.get('trackingCode') as string,
+          )
+        }} className="space-y-3">
           <input type="hidden" name="orderId" value={order.id} />
-          <select name="status" defaultValue={order.status}
-            className="border border-stone-300 rounded-lg px-3 py-2 text-sm flex-1">
-            {STATUS_LIST.map((s) => <option key={s} value={s}>{STATUS_LABELS[s]}</option>)}
-          </select>
-          <button type="submit" className="bg-amber-600 hover:bg-amber-700 text-white px-5 py-2 rounded-lg text-sm font-medium transition-colors">
-            Salvar
-          </button>
+          <div className="mb-3">
+            <label className="block text-sm text-stone-600 mb-1">Código de rastreamento (SEDEX/PAC)</label>
+            <input
+              name="trackingCode"
+              type="text"
+              defaultValue={order.trackingCode ?? ''}
+              placeholder="Ex: BR123456789BR"
+              className="w-full border border-stone-300 rounded-lg px-3 py-2 text-sm font-mono uppercase"
+            />
+          </div>
+          <div className="flex gap-3">
+            <select name="status" defaultValue={order.status}
+              className="border border-stone-300 rounded-lg px-3 py-2 text-sm flex-1">
+              {STATUS_LIST.map((s) => <option key={s} value={s}>{STATUS_LABELS[s]}</option>)}
+            </select>
+            <button type="submit" className="bg-amber-600 hover:bg-amber-700 text-white px-5 py-2 rounded-lg text-sm font-medium transition-colors">
+              Salvar
+            </button>
+          </div>
         </form>
       </div>
     </div>

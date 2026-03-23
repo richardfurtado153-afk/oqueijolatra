@@ -105,6 +105,25 @@ export default async function OrderDetailPage({ params }: OrderDetailPageProps) 
           </div>
         </section>
 
+        {/* Tracking code */}
+        {order.trackingCode && (
+          <section className="bg-white rounded-xl border border-stone-200 p-6">
+            <h2 className="text-lg font-semibold text-stone-900 mb-4">Rastreamento</h2>
+            <div className="text-sm text-stone-600 space-y-2">
+              <p>Código de rastreamento:</p>
+              <p className="font-mono text-base font-bold text-stone-900 tracking-widest">{order.trackingCode}</p>
+              <a
+                href="https://www.correios.com.br/rastreamento"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-block mt-2 text-amber-700 hover:underline"
+              >
+                Rastrear nos Correios →
+              </a>
+            </div>
+          </section>
+        )}
+
         {/* Payment */}
         <section className="bg-white rounded-xl border border-stone-200 p-6">
           <h2 className="text-lg font-semibold text-stone-900 mb-4">Pagamento</h2>

@@ -109,6 +109,7 @@ model Order {
   id                   String        @id @default(cuid())
   orderNumber          Int           @unique
   status               OrderStatus   @default(PENDING)
+  trackingCode         String?
   customerName         String
   email                String
   phone                String

@@ -81,6 +81,12 @@ function LoginForm() {
           />
         </div>
 
+        <div className="text-right -mt-2">
+          <Link href="/conta/esqueci-senha" className="text-sm text-amber-700 hover:underline">
+            Esqueceu a senha?
+          </Link>
+        </div>
+
         <button
           type="submit"
           disabled={loading}
