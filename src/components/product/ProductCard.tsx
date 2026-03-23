@@ -42,13 +42,14 @@ export default function ProductCard({ product }: ProductCardProps) {
     <div className="relative bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow flex-shrink-0 w-[220px] snap-start overflow-hidden group">
       <div className="relative w-full aspect-square">
         {discount && <Badge percentage={discount} />}
-        <Link href={`/produto/${product.slug}`}>
+        <Link href={`/produto/${product.slug}`} className="relative block w-full h-full">
           <Image
             src={product.image}
             alt={product.name}
             fill
             className="object-cover"
             sizes="220px"
+            unoptimized={product.image.startsWith('http')}
           />
         </Link>
       </div>

@@ -37,6 +37,7 @@ export default function ProductGallery({ images, productName }: ProductGalleryPr
           className="object-contain"
           sizes="(max-width: 768px) 100vw, 500px"
           priority
+          unoptimized={mainImage.url.startsWith('http')}
         />
       </div>
 
@@ -59,6 +60,7 @@ export default function ProductGallery({ images, productName }: ProductGalleryPr
                 fill
                 className="object-cover"
                 sizes="64px"
+                unoptimized={img.url.startsWith('http')}
               />
             </button>
           ))}
