@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { Decimal } from '@/generated/prisma/internal/prismaNamespace'
 import { paymentProvider } from '@/lib/payment'
+import { sendOrderConfirmation } from '@/lib/email'
 
 interface CheckoutItem {
   productId: string
@@ -258,6 +259,24 @@ export async function POST(request: NextRequest) {
         })
       }
     }
+
+    // Send order confirmation email (non-blocking)
+    const orderWithItems = order as typeof order & { items: Array<{ productName: string; quantity: number; unitPrice: { toNumber(): number } | number }> }
+    sendOrderConfirmation({
+      id: order.id,
+      orderNumber: order.orderNumber,
+      email: order.email,
+      customerName: order.customerName,
+      total: Number(order.total),
+      items: orderWithItems.items.map((i) => ({
+        productName: i.productName,
+        quantity: i.quantity,
+        unitPrice: Number(i.unitPrice),
+      })),
+      shippingMethod: order.shippingMethod,
+      shippingCost: Number(order.shippingCost),
+      paymentMethod: order.paymentMethod,
+    }).catch(err => console.error('Email send failed:', err))
 
     return NextResponse.json({ order, payment: paymentData }, { status: 201 })
   } catch (error: any) {
