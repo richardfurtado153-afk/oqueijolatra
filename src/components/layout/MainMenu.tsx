@@ -2,15 +2,20 @@ import Link from 'next/link'
 import { prisma } from '@/lib/prisma'
 
 export default async function MainMenu() {
-  const categories = await prisma.category.findMany({
-    where: { parentId: null },
-    orderBy: { position: 'asc' },
-    include: {
-      children: {
-        orderBy: { position: 'asc' },
+  let categories: Array<{ id: string; name: string; slug: string; children: Array<{ id: string; name: string; slug: string }> }> = []
+  try {
+    categories = await prisma.category.findMany({
+      where: { parentId: null },
+      orderBy: { position: 'asc' },
+      include: {
+        children: {
+          orderBy: { position: 'asc' },
+        },
       },
-    },
-  })
+    })
+  } catch {
+    // DB unavailable during build or cold start
+  }
 
   return (
     <nav className="bg-stone-50 border-b border-stone-200">

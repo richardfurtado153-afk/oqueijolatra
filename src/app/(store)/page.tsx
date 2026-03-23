@@ -32,56 +32,69 @@ function toCardData(
 }
 
 export default async function HomePage() {
-  const [
-    banners,
-    newProducts,
-    bestsellers,
-    featured,
-    cat30Queijos,
-    catChocolates,
-    catQueijos,
-    catCremosos,
-  ] = await Promise.all([
-    prisma.banner.findMany({
-      where: { active: true },
-      orderBy: { position: 'asc' },
-    }),
-    prisma.product.findMany({
-      where: { isNew: true, status: 'AVAILABLE' },
-      include: { images: { orderBy: { position: 'asc' } } },
-      take: 8,
-    }),
-    prisma.product.findMany({
-      where: { isBestseller: true, status: 'AVAILABLE' },
-      include: { images: { orderBy: { position: 'asc' } } },
-      take: 8,
-    }),
-    prisma.product.findMany({
-      where: { featured: true, status: 'AVAILABLE' },
-      include: { images: { orderBy: { position: 'asc' } } },
-      take: 8,
-    }),
-    prisma.product.findMany({
-      where: { category: { slug: '30-queijos-brasileiros' }, status: 'AVAILABLE' },
-      include: { images: { orderBy: { position: 'asc' } } },
-      take: 8,
-    }),
-    prisma.product.findMany({
-      where: { category: { slug: 'chocolates' }, status: 'AVAILABLE' },
-      include: { images: { orderBy: { position: 'asc' } } },
-      take: 8,
-    }),
-    prisma.product.findMany({
-      where: { category: { slug: 'queijos' }, status: 'AVAILABLE' },
-      include: { images: { orderBy: { position: 'asc' } } },
-      take: 8,
-    }),
-    prisma.product.findMany({
-      where: { category: { slug: 'cremosos' }, status: 'AVAILABLE' },
-      include: { images: { orderBy: { position: 'asc' } } },
-      take: 8,
-    }),
-  ])
+  let banners: Awaited<ReturnType<typeof prisma.banner.findMany>> = []
+  let newProducts: Awaited<ReturnType<typeof prisma.product.findMany<{ include: { images: true } }>>> = []
+  let bestsellers = newProducts
+  let featured = newProducts
+  let cat30Queijos = newProducts
+  let catChocolates = newProducts
+  let catQueijos = newProducts
+  let catCremosos = newProducts
+
+  try {
+    ;[
+      banners,
+      newProducts,
+      bestsellers,
+      featured,
+      cat30Queijos,
+      catChocolates,
+      catQueijos,
+      catCremosos,
+    ] = await Promise.all([
+      prisma.banner.findMany({
+        where: { active: true },
+        orderBy: { position: 'asc' },
+      }),
+      prisma.product.findMany({
+        where: { isNew: true, status: 'AVAILABLE' },
+        include: { images: { orderBy: { position: 'asc' } } },
+        take: 8,
+      }),
+      prisma.product.findMany({
+        where: { isBestseller: true, status: 'AVAILABLE' },
+        include: { images: { orderBy: { position: 'asc' } } },
+        take: 8,
+      }),
+      prisma.product.findMany({
+        where: { featured: true, status: 'AVAILABLE' },
+        include: { images: { orderBy: { position: 'asc' } } },
+        take: 8,
+      }),
+      prisma.product.findMany({
+        where: { category: { slug: '30-queijos-brasileiros' }, status: 'AVAILABLE' },
+        include: { images: { orderBy: { position: 'asc' } } },
+        take: 8,
+      }),
+      prisma.product.findMany({
+        where: { category: { slug: 'chocolates' }, status: 'AVAILABLE' },
+        include: { images: { orderBy: { position: 'asc' } } },
+        take: 8,
+      }),
+      prisma.product.findMany({
+        where: { category: { slug: 'queijos' }, status: 'AVAILABLE' },
+        include: { images: { orderBy: { position: 'asc' } } },
+        take: 8,
+      }),
+      prisma.product.findMany({
+        where: { category: { slug: 'cremosos' }, status: 'AVAILABLE' },
+        include: { images: { orderBy: { position: 'asc' } } },
+        take: 8,
+      }),
+    ])
+  } catch {
+    // DB unavailable
+  }
 
   return (
     <>

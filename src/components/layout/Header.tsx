@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import Image from 'next/image'
 import TopBar from './TopBar'
 import SearchBar from './SearchBar'
 import MainMenu from './MainMenu'
@@ -9,11 +10,16 @@ export default function Header() {
     <header>
       <TopBar />
       <div className="bg-white border-b border-stone-200">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-6">
+        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-6">
           <Link href="/" className="flex-shrink-0">
-            <span className="text-2xl md:text-3xl font-bold tracking-tight text-stone-800">
-              O <span className="text-amber-700">QUEIJOLATRA</span>
-            </span>
+            <Image
+              src="/logo.png"
+              alt="O Queijolatra"
+              width={180}
+              height={60}
+              className="h-12 w-auto object-contain"
+              priority
+            />
           </Link>
           <div className="hidden md:flex flex-1 justify-center">
             <SearchBar />

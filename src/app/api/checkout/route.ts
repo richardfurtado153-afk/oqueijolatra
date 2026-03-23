@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { Decimal } from '@/generated/prisma/client/runtime/library'
+import { Decimal } from '@/generated/prisma/internal/prismaNamespace'
 import { paymentProvider } from '@/lib/payment'
 
 interface CheckoutItem {
