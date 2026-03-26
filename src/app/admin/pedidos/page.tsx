@@ -22,7 +22,15 @@ export default async function AdminOrders({ searchParams }: { searchParams: Prom
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-stone-800 mb-6">Pedidos</h1>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold text-stone-800">Pedidos</h1>
+        <a
+          href="/api/admin/orders/export"
+          className="bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-700 transition-colors"
+        >
+          Exportar CSV
+        </a>
+      </div>
       <div className="flex gap-2 mb-4 flex-wrap">
         {['', 'PENDING', 'PAID', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED'].map((s) => (
           <Link key={s} href={s ? `/admin/pedidos?status=${s}` : '/admin/pedidos'}
@@ -33,7 +41,7 @@ export default async function AdminOrders({ searchParams }: { searchParams: Prom
           </Link>
         ))}
       </div>
-      <div className="bg-white rounded-xl shadow-sm border border-stone-200 overflow-hidden">
+      <div className="bg-white rounded-xl shadow-sm border border-stone-200 overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="bg-stone-50 border-b border-stone-200">
             <tr>

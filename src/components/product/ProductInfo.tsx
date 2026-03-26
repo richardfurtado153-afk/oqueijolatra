@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useCartStore } from '@/stores/cart'
+import { useToastStore } from '@/stores/toast'
 import { formatPrice, calcDiscountPercent } from '@/lib/utils'
 import QuantitySelector from './QuantitySelector'
 import FavoriteButton from '@/components/account/FavoriteButton'
@@ -40,6 +41,7 @@ export default function ProductInfo({
   initialFavorited = false,
 }: ProductInfoProps) {
   const addItem = useCartStore((s) => s.addItem)
+  const addToast = useToastStore((s) => s.addToast)
   const [selectedVariation, setSelectedVariation] = useState<Variation | null>(
     variations.length > 0 ? variations[0] : null
   )
@@ -72,6 +74,7 @@ export default function ProductInfo({
       },
       quantity
     )
+    addToast('Produto adicionado ao carrinho!')
   }
 
   return (

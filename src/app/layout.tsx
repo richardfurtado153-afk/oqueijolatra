@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
 import Providers from './providers'
+import ToastContainer from '@/components/ui/ToastContainer'
 import { FB_PIXEL_ID } from '@/lib/pixel'
 import Script from 'next/script'
 
@@ -11,9 +12,20 @@ const inter = Inter({
 })
 
 export const metadata: Metadata = {
-  title: 'O Queijolatra | Queijos Artesanais',
-  description:
-    'Os melhores queijos artesanais do Brasil. Selecionados com carinho para a sua mesa.',
+  title: {
+    default: 'O Queijolatra | Queijos Artesanais',
+    template: '%s | O Queijolatra',
+  },
+  description: 'Os melhores queijos artesanais do Brasil. Selecionados com carinho para a sua mesa.',
+  metadataBase: new URL('https://oqueijolatra.com.br'),
+  openGraph: {
+    type: 'website',
+    locale: 'pt_BR',
+    siteName: 'O Queijolatra',
+    title: 'O Queijolatra | Queijos Artesanais',
+    description: 'Os melhores queijos artesanais do Brasil. Selecionados com carinho para a sua mesa.',
+  },
+  robots: { index: true, follow: true },
 }
 
 export default function RootLayout({
@@ -54,6 +66,7 @@ export default function RootLayout({
       </head>
       <body className="min-h-full flex flex-col bg-[#faf7f2] text-stone-800 font-sans">
         <Providers>{children}</Providers>
+        <ToastContainer />
       </body>
     </html>
   )

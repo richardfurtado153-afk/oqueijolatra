@@ -13,7 +13,7 @@ export default async function AdminCategories() {
   return (
     <div className="max-w-2xl">
       <h1 className="text-2xl font-bold text-stone-800 mb-6">Categorias</h1>
-      <div className="bg-white rounded-xl border border-stone-200 mb-6 overflow-hidden">
+      <div className="bg-white rounded-xl border border-stone-200 mb-6 overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="bg-stone-50 border-b border-stone-200">
             <tr>

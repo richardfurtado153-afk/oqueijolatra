@@ -1,59 +1,38 @@
-import type { MetadataRoute } from 'next'
+import { MetadataRoute } from 'next'
 import { prisma } from '@/lib/prisma'
 
+const BASE_URL = 'https://oqueijolatra.com.br'
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = process.env.NEXTAUTH_URL || 'https://oqueijolatra.com.br'
+  const [products, categories, brands] = await Promise.all([
+    prisma.product.findMany({ where: { status: 'AVAILABLE' }, select: { slug: true, updatedAt: true } }),
+    prisma.category.findMany({ select: { slug: true } }),
+    prisma.brand.findMany({ select: { slug: true } }),
+  ])
 
-  let products: { slug: string; updatedAt: Date }[] = []
-  let categories: { slug: string }[] = []
-  let brands: { slug: string }[] = []
-
-  try {
-    ;[products, categories, brands] = await Promise.all([
-      prisma.product.findMany({
-        where: { status: 'AVAILABLE' },
-        select: { slug: true, updatedAt: true },
-      }),
-      prisma.category.findMany({
-        select: { slug: true },
-      }),
-      prisma.brand.findMany({
-        select: { slug: true },
-      }),
-    ])
-  } catch {
-    // DB unavailable — return static entries only
-  }
-
-  const staticEntries: MetadataRoute.Sitemap = [
-    {
-      url: baseUrl,
-      lastModified: new Date(),
-      changeFrequency: 'daily',
-      priority: 1.0,
-    },
+  const staticPages: MetadataRoute.Sitemap = [
+    { url: BASE_URL, lastModified: new Date(), changeFrequency: 'daily', priority: 1 },
+    { url: `${BASE_URL}/busca`, changeFrequency: 'weekly', priority: 0.5 },
   ]
 
-  const categoryEntries: MetadataRoute.Sitemap = categories.map((category) => ({
-    url: `${baseUrl}/${category.slug}`,
-    lastModified: new Date(),
-    changeFrequency: 'weekly',
+  const productPages: MetadataRoute.Sitemap = products.map((p) => ({
+    url: `${BASE_URL}/produto/${p.slug}`,
+    lastModified: p.updatedAt,
+    changeFrequency: 'weekly' as const,
     priority: 0.8,
   }))
 
-  const productEntries: MetadataRoute.Sitemap = products.map((product) => ({
-    url: `${baseUrl}/produto/${product.slug}`,
-    lastModified: product.updatedAt,
-    changeFrequency: 'weekly',
+  const categoryPages: MetadataRoute.Sitemap = categories.map((c) => ({
+    url: `${BASE_URL}/${c.slug}`,
+    changeFrequency: 'weekly' as const,
     priority: 0.7,
   }))
 
-  const brandEntries: MetadataRoute.Sitemap = brands.map((brand) => ({
-    url: `${baseUrl}/marca/${brand.slug}`,
-    lastModified: new Date(),
-    changeFrequency: 'weekly',
-    priority: 0.5,
+  const brandPages: MetadataRoute.Sitemap = brands.map((b) => ({
+    url: `${BASE_URL}/marca/${b.slug}`,
+    changeFrequency: 'weekly' as const,
+    priority: 0.6,
   }))
 
-  return [...staticEntries, ...categoryEntries, ...productEntries, ...brandEntries]
+  return [...staticPages, ...productPages, ...categoryPages, ...brandPages]
 }

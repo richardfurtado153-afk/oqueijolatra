@@ -20,7 +20,7 @@ export default async function MainMenu() {
   return (
     <nav className="bg-stone-50 border-b border-stone-200">
       <div className="max-w-7xl mx-auto px-4">
-        <ul className="flex items-center gap-1">
+        <ul className="flex items-center gap-1 overflow-x-auto scrollbar-hide">
           {categories.map((cat) => (
             <li key={cat.id} className="relative group">
               <Link
