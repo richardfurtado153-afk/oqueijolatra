@@ -17,7 +17,7 @@ export default function TopBar() {
             Fale Conosco
           </button>
           <div className="flex items-center gap-4">
-            <a href="tel:+551198452-3161" className="hover:text-white transition-colors">
+            <a href="tel:+551198452-3161" className="hidden sm:inline hover:text-white transition-colors">
               (11) 98452-3161
             </a>
             <a

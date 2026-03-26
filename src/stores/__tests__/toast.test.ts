@@ -1,29 +1,30 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest'
 import { useToastStore } from '../toast'
 
-describe('toast store', () => {
+describe('Toast Store', () => {
   beforeEach(() => {
     vi.useFakeTimers()
     useToastStore.setState({ toasts: [] })
   })
 
   afterEach(() => {
-    vi.useRealTimers()
+    vi.restoreAllTimers()
   })
 
   describe('addToast', () => {
     it('adds a toast with default type "success"', () => {
-      useToastStore.getState().addToast('Item adicionado!')
+      useToastStore.getState().addToast('Item added!')
       const toasts = useToastStore.getState().toasts
       expect(toasts).toHaveLength(1)
-      expect(toasts[0].message).toBe('Item adicionado!')
+      expect(toasts[0].message).toBe('Item added!')
       expect(toasts[0].type).toBe('success')
       expect(toasts[0].id).toBeTruthy()
     })
 
     it('adds a toast with custom type', () => {
-      useToastStore.getState().addToast('Erro!', 'error')
-      expect(useToastStore.getState().toasts[0].type).toBe('error')
+      useToastStore.getState().addToast('Something went wrong', 'error')
+      const toasts = useToastStore.getState().toasts
+      expect(toasts[0].type).toBe('error')
     })
 
     it('can add multiple toasts', () => {
@@ -41,19 +42,16 @@ describe('toast store', () => {
       expect(useToastStore.getState().toasts).toHaveLength(0)
     })
 
-    it('does not affect other toasts', () => {
-      useToastStore.getState().addToast('Keep')
-      useToastStore.getState().addToast('Remove')
-      const toasts = useToastStore.getState().toasts
-      useToastStore.getState().removeToast(toasts[1].id)
+    it('does nothing when removing non-existent id', () => {
+      useToastStore.getState().addToast('Keep me')
+      useToastStore.getState().removeToast('non-existent')
       expect(useToastStore.getState().toasts).toHaveLength(1)
-      expect(useToastStore.getState().toasts[0].message).toBe('Keep')
     })
   })
 
   describe('auto-dismissal', () => {
-    it('removes the toast after 4000ms', () => {
-      useToastStore.getState().addToast('Will vanish')
+    it('removes toast automatically after 4000ms', () => {
+      useToastStore.getState().addToast('Auto dismiss')
       expect(useToastStore.getState().toasts).toHaveLength(1)
 
       vi.advanceTimersByTime(3999)
@@ -63,13 +61,13 @@ describe('toast store', () => {
       expect(useToastStore.getState().toasts).toHaveLength(0)
     })
 
-    it('only removes the specific toast that timed out', () => {
+    it('only removes the specific toast after timeout', () => {
       useToastStore.getState().addToast('First')
       vi.advanceTimersByTime(2000)
       useToastStore.getState().addToast('Second')
 
       vi.advanceTimersByTime(2000)
-      // First should be gone (4000ms elapsed), second still present (2000ms elapsed)
+      // First toast should be gone (4000ms elapsed), second still present (2000ms elapsed)
       const toasts = useToastStore.getState().toasts
       expect(toasts).toHaveLength(1)
       expect(toasts[0].message).toBe('Second')
