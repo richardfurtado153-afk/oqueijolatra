@@ -8,7 +8,7 @@ describe('Toast Store', () => {
   })
 
   afterEach(() => {
-    vi.restoreAllTimers()
+    vi.useRealTimers()
   })
 
   describe('addToast', () => {
