@@ -18,7 +18,7 @@ export default async function AdminOrderDetail({ params }: { params: Promise<{ i
       <h1 className="text-2xl font-bold text-stone-800 mb-1">Pedido #{order.orderNumber}</h1>
       <p className="text-stone-500 mb-6">{new Date(order.createdAt).toLocaleString('pt-BR')}</p>
 
-      <div className="grid grid-cols-2 gap-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
         <div className="bg-white rounded-xl p-5 border border-stone-200">
           <h2 className="font-semibold mb-3 text-stone-700">Cliente</h2>
           <p>{order.customerName}</p>
@@ -36,7 +36,7 @@ export default async function AdminOrderDetail({ params }: { params: Promise<{ i
         </div>
       </div>
 
-      <div className="bg-white rounded-xl border border-stone-200 mb-6">
+      <div className="bg-white rounded-xl border border-stone-200 mb-6 overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="bg-stone-50 border-b border-stone-200">
             <tr>

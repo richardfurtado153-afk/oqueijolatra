@@ -23,7 +23,7 @@ export default async function AdminProducts({ searchParams }: { searchParams: Pr
         <input name="q" defaultValue={q} placeholder="Buscar produto..." className="border border-stone-300 rounded-lg px-4 py-2 w-80 text-sm" />
         <button className="ml-2 bg-stone-200 hover:bg-stone-300 px-4 py-2 rounded-lg text-sm">Buscar</button>
       </form>
-      <div className="bg-white rounded-xl border border-stone-200 overflow-hidden">
+      <div className="bg-white rounded-xl border border-stone-200 overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="bg-stone-50 border-b border-stone-200">
             <tr>
@@ -46,7 +46,15 @@ export default async function AdminProducts({ searchParams }: { searchParams: Pr
                 <td className="px-4 py-3 text-stone-500">{p.category.name}</td>
                 <td className="px-4 py-3">R$ {Number(p.price).toFixed(2).replace('.', ',')}</td>
                 <td className="px-4 py-3">
-                  <span className={p.stock > 0 ? 'text-green-600' : 'text-red-600'}>{p.stock}</span>
+                  {p.stock <= 5 ? (
+                    <span className={`px-2 py-1 rounded-full text-xs font-bold ${
+                      p.stock === 0 ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'
+                    }`}>
+                      {p.stock}
+                    </span>
+                  ) : (
+                    <span className="text-green-600">{p.stock}</span>
+                  )}
                 </td>
                 <td className="px-4 py-3">
                   <div className="flex gap-3">

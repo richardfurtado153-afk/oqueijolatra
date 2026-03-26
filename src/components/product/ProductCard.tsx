@@ -18,9 +18,10 @@ export interface ProductCardData {
 
 interface ProductCardProps {
   product: ProductCardData
+  className?: string
 }
 
-export default function ProductCard({ product }: ProductCardProps) {
+export default function ProductCard({ product, className }: ProductCardProps) {
   const addItem = useCartStore((s) => s.addItem)
   const [imgError, setImgError] = React.useState(false)
 
@@ -41,7 +42,7 @@ export default function ProductCard({ product }: ProductCardProps) {
   }
 
   return (
-    <div className="relative bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow flex-shrink-0 w-[220px] snap-start overflow-hidden group">
+    <div className={`relative bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow flex-shrink-0 snap-start overflow-hidden group ${className ?? 'w-[220px]'}`}>
       <div className="relative w-full aspect-square">
         {discount && <Badge percentage={discount} />}
         <Link href={`/produto/${product.slug}`} className="relative block w-full h-full">

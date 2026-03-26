@@ -96,8 +96,20 @@ export default async function HomePage() {
     // DB unavailable
   }
 
+  const organizationJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Organization',
+    name: 'O Queijolatra',
+    url: 'https://oqueijolatra.com.br',
+    description: 'Os melhores queijos artesanais do Brasil',
+  }
+
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
+      />
       <BannerSlider banners={banners} />
 
       <NewsletterBar />

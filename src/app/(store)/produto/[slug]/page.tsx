@@ -50,12 +50,18 @@ export async function generateMetadata({
 
   const product = await prisma.product.findUnique({
     where: { slug },
-    select: { name: true, description: true, price: true },
+    select: {
+      name: true,
+      description: true,
+      price: true,
+      images: { where: { isMain: true }, select: { url: true, alt: true }, take: 1 },
+    },
   })
 
   if (!product) return {}
 
   const price = Number(product.price)
+  const mainImage = product.images[0]
 
   return {
     title: `${product.name} | O Queijolatra`,
@@ -66,6 +72,9 @@ export async function generateMetadata({
       title: product.name,
       description:
         product.description?.replace(/<[^>]*>/g, '').slice(0, 160) || undefined,
+      images: mainImage
+        ? [{ url: mainImage.url, alt: mainImage.alt || product.name }]
+        : undefined,
     },
     other: {
       'product:price:amount': price.toFixed(2),
