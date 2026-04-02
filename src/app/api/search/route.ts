@@ -1,11 +1,12 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { apiSuccess, apiError } from '@/lib/api'
 
 export async function GET(request: NextRequest) {
   const q = request.nextUrl.searchParams.get('q')?.trim() ?? ''
 
   if (q.length < 2) {
-    return NextResponse.json({ error: 'Busca deve ter pelo menos 2 caracteres' }, { status: 400 })
+    return apiError('Busca deve ter pelo menos 2 caracteres')
   }
 
   const products = await prisma.product.findMany({
@@ -18,14 +19,11 @@ export async function GET(request: NextRequest) {
       ],
     },
     include: {
-      images: {
-        where: { isMain: true },
-        take: 1,
-      },
+      images: { where: { isMain: true }, take: 1 },
       brand: true,
     },
     take: 20,
   })
 
-  return NextResponse.json(products)
+  return apiSuccess(products)
 }

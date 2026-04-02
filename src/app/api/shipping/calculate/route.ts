@@ -1,15 +1,18 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { calculateShipping } from '@/lib/shipping'
+import { apiSuccess, apiError, parseBody } from '@/lib/api'
 
 export async function POST(request: NextRequest) {
-  const { cep, weightGrams } = await request.json()
-  if (!cep) return NextResponse.json({ error: 'CEP obrigatorio' }, { status: 400 })
+  const parsed = await parseBody<{ cep: string; weightGrams?: number }>(request)
+  if (parsed.error) return parsed.error
+
+  const { cep, weightGrams } = parsed.data
+  if (!cep) return apiError('CEP obrigatorio')
+
   const options = await calculateShipping(cep, weightGrams || 1000)
   if (options.length === 0) {
-    return NextResponse.json(
-      { error: 'Nao foi possivel calcular o frete. Entre em contato via WhatsApp.' },
-      { status: 422 }
-    )
+    return apiError('Nao foi possivel calcular o frete. Entre em contato via WhatsApp.', 422)
   }
-  return NextResponse.json({ options })
+
+  return apiSuccess({ options })
 }

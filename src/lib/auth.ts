@@ -1,7 +1,10 @@
 import { NextAuthOptions } from 'next-auth'
+import { getServerSession } from 'next-auth'
 import CredentialsProvider from 'next-auth/providers/credentials'
 import bcrypt from 'bcryptjs'
 import { prisma } from './prisma'
+
+export const MIN_PASSWORD_LENGTH = 8
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -29,16 +32,23 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id
-        token.isAdmin = (user as any).isAdmin ?? false
+        token.isAdmin = user.isAdmin ?? false
       }
       return token
     },
     async session({ session, token }) {
       if (session.user) {
-        (session.user as any).id = token.id
-        ;(session.user as any).isAdmin = token.isAdmin
+        session.user.id = token.id
+        session.user.isAdmin = token.isAdmin
       }
       return session
     },
   },
+}
+
+/** Get authenticated user or throw. Use in server actions. */
+export async function getAuthenticatedUser() {
+  const session = await getServerSession(authOptions)
+  if (!session?.user?.id) throw new Error('Nao autenticado')
+  return session.user
 }

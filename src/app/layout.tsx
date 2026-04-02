@@ -11,9 +11,61 @@ const inter = Inter({
 })
 
 export const metadata: Metadata = {
-  title: 'O Queijolatra | Queijos Artesanais',
+  metadataBase: new URL('https://oqueijolatra.com.br'),
+  title: {
+    default: 'O Queijolatra | Queijos Artesanais e Especiais',
+    template: '%s | O Queijolatra',
+  },
   description:
-    'Os melhores queijos artesanais do Brasil. Selecionados com carinho para a sua mesa.',
+    'Loja online de queijos artesanais brasileiros, importados e especiais. Queijos finos, cremosos, maturados e chocolates selecionados com carinho para a sua mesa.',
+  keywords: [
+    'queijos artesanais',
+    'queijos especiais',
+    'queijos brasileiros',
+    'queijos finos',
+    'comprar queijo online',
+    'queijolatra',
+    'queijos importados',
+    'queijos cremosos',
+    'chocolates artesanais',
+  ],
+  authors: [{ name: 'O Queijolatra' }],
+  creator: 'O Queijolatra',
+  openGraph: {
+    type: 'website',
+    locale: 'pt_BR',
+    url: 'https://oqueijolatra.com.br',
+    siteName: 'O Queijolatra',
+    title: 'O Queijolatra | Queijos Artesanais e Especiais',
+    description:
+      'Loja online de queijos artesanais brasileiros, importados e especiais. Selecionados com carinho para a sua mesa.',
+    images: [
+      {
+        url: '/logo.png',
+        width: 600,
+        height: 600,
+        alt: 'O Queijolatra - Queijos Artesanais',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'O Queijolatra | Queijos Artesanais e Especiais',
+    description:
+      'Loja online de queijos artesanais brasileiros, importados e especiais.',
+    images: ['/logo.png'],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
 }
 
 export default function RootLayout({

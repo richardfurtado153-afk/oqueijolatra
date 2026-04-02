@@ -1,5 +1,5 @@
-import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { apiSuccess, apiError } from '@/lib/api'
 
 export async function GET(
   _request: Request,
@@ -12,15 +12,13 @@ export async function GET(
     include: {
       images: { orderBy: { position: 'asc' } },
       brand: true,
-      category: {
-        include: { parent: true },
-      },
+      category: { include: { parent: true } },
       variations: true,
     },
   })
 
   if (!product) {
-    return NextResponse.json({ error: 'Produto nao encontrado' }, { status: 404 })
+    return apiError('Produto nao encontrado', 404)
   }
 
   const related = await prisma.product.findMany({
@@ -36,5 +34,5 @@ export async function GET(
     take: 4,
   })
 
-  return NextResponse.json({ product, related })
+  return apiSuccess({ product, related })
 }

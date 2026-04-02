@@ -4,22 +4,14 @@ import Link from 'next/link'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { formatPrice } from '@/lib/utils'
-
-const STATUS_LABELS: Record<string, { label: string; color: string }> = {
-  PENDING: { label: 'Pendente', color: 'bg-yellow-100 text-yellow-800' },
-  PAID: { label: 'Pago', color: 'bg-green-100 text-green-800' },
-  PROCESSING: { label: 'Processando', color: 'bg-blue-100 text-blue-800' },
-  SHIPPED: { label: 'Enviado', color: 'bg-purple-100 text-purple-800' },
-  DELIVERED: { label: 'Entregue', color: 'bg-green-100 text-green-800' },
-  CANCELLED: { label: 'Cancelado', color: 'bg-red-100 text-red-800' },
-}
+import { ORDER_STATUS_LABELS } from '@/types'
 
 const PAYMENT_LABELS: Record<string, string> = {
   PIX: 'PIX',
   CARD: 'Cartao de Credito',
 }
 
-const PAYMENT_STATUS_LABELS: Record<string, string> = {
+const PAYMENT_ORDER_STATUS_LABELS: Record<string, string> = {
   PENDING: 'Pendente',
   CONFIRMED: 'Confirmado',
   FAILED: 'Falhou',
@@ -49,7 +41,7 @@ export default async function OrderDetailPage({ params }: OrderDetailPageProps) 
     notFound()
   }
 
-  const statusInfo = STATUS_LABELS[order.status] || { label: order.status, color: 'bg-stone-100 text-stone-800' }
+  const statusInfo = ORDER_STATUS_LABELS[order.status] || { label: order.status, color: 'bg-stone-100 text-stone-800' }
 
   return (
     <div>
@@ -129,7 +121,7 @@ export default async function OrderDetailPage({ params }: OrderDetailPageProps) 
           <h2 className="text-lg font-semibold text-stone-900 mb-4">Pagamento</h2>
           <div className="text-sm text-stone-600 space-y-1">
             <p>Metodo: {PAYMENT_LABELS[order.paymentMethod] || order.paymentMethod}</p>
-            <p>Status: {PAYMENT_STATUS_LABELS[order.paymentStatus] || order.paymentStatus}</p>
+            <p>Status: {PAYMENT_ORDER_STATUS_LABELS[order.paymentStatus] || order.paymentStatus}</p>
           </div>
         </section>
 

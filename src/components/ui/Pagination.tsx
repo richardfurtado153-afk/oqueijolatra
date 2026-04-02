@@ -26,26 +26,29 @@ export default function Pagination({ currentPage, totalPages, onPageChange }: Pa
   }
 
   return (
-    <nav className="flex items-center justify-center gap-1 mt-8" aria-label="Paginacao">
+    <nav className="flex items-center justify-center gap-1 mt-8" aria-label={`Paginacao - Pagina ${currentPage} de ${totalPages}`}>
       <button
         onClick={() => onPageChange(currentPage - 1)}
         disabled={currentPage === 1}
-        className="px-3 py-2 rounded-lg text-sm font-medium text-stone-600 hover:bg-stone-100 disabled:opacity-40 disabled:cursor-not-allowed"
+        aria-label="Pagina anterior"
+        className="px-3 py-2 rounded-lg text-sm font-medium text-stone-600 hover:bg-stone-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
       >
         Anterior
       </button>
       {getPages().map((page, idx) =>
         page === '...' ? (
-          <span key={`ellipsis-${idx}`} className="px-2 py-2 text-stone-400">
+          <span key={`ellipsis-${idx}`} className="px-2 py-2 text-stone-400" aria-hidden="true">
             ...
           </span>
         ) : (
           <button
             key={page}
             onClick={() => onPageChange(page)}
-            className={`w-10 h-10 rounded-lg text-sm font-medium transition-colors ${
+            aria-label={`Pagina ${page}`}
+            aria-current={page === currentPage ? 'page' : undefined}
+            className={`w-10 h-10 rounded-lg text-sm font-medium transition-all duration-200 ${
               page === currentPage
-                ? 'bg-amber-700 text-white'
+                ? 'bg-amber-700 text-white shadow-sm'
                 : 'text-stone-600 hover:bg-stone-100'
             }`}
           >
@@ -56,7 +59,8 @@ export default function Pagination({ currentPage, totalPages, onPageChange }: Pa
       <button
         onClick={() => onPageChange(currentPage + 1)}
         disabled={currentPage === totalPages}
-        className="px-3 py-2 rounded-lg text-sm font-medium text-stone-600 hover:bg-stone-100 disabled:opacity-40 disabled:cursor-not-allowed"
+        aria-label="Proxima pagina"
+        className="px-3 py-2 rounded-lg text-sm font-medium text-stone-600 hover:bg-stone-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
       >
         Proximo
       </button>

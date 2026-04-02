@@ -1,10 +1,10 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { Decimal } from '@/generated/prisma/internal/prismaNamespace'
 import { paymentProvider } from '@/lib/payment'
 import { sendOrderConfirmation } from '@/lib/email'
+import { calculateShipping } from '@/lib/shipping'
+import { apiSuccess, apiError, requireAuth, parseBody } from '@/lib/api'
 
 interface CheckoutItem {
   productId: string
@@ -33,78 +33,98 @@ interface CheckoutBody {
 }
 
 export async function POST(request: NextRequest) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) {
-    return NextResponse.json({ error: 'Nao autenticado' }, { status: 401 })
-  }
-  const customerId = (session.user as { id: string }).id
+  const auth = await requireAuth()
+  if (auth.error) return auth.error
 
-  let body: CheckoutBody
-  try {
-    body = await request.json()
-  } catch {
-    return NextResponse.json({ error: 'Corpo da requisicao invalido' }, { status: 400 })
-  }
+  const parsed = await parseBody<CheckoutBody>(request)
+  if (parsed.error) return parsed.error
+  const body = parsed.data
 
   const {
-    items,
-    customerName,
-    email,
-    phone,
-    cpf,
-    shippingCep,
-    shippingStreet,
-    shippingNumber,
-    shippingComplement,
-    shippingNeighborhood,
-    shippingCity,
-    shippingState,
-    shippingMethod,
-    shippingCost,
-    paymentMethod,
-    couponCode,
-    cardToken,
+    items, customerName, email, phone, cpf,
+    shippingCep, shippingStreet, shippingNumber, shippingComplement,
+    shippingNeighborhood, shippingCity, shippingState,
+    shippingMethod, shippingCost, paymentMethod, couponCode, cardToken,
   } = body
 
   if (!items || items.length === 0) {
-    return NextResponse.json({ error: 'Carrinho vazio' }, { status: 400 })
+    return apiError('Carrinho vazio')
   }
-
   if (!customerName || !email || !phone || !cpf) {
-    return NextResponse.json({ error: 'Dados do cliente obrigatorios' }, { status: 400 })
+    return apiError('Dados do cliente obrigatorios')
   }
-
   if (!shippingCep || !shippingStreet || !shippingNumber || !shippingNeighborhood || !shippingCity || !shippingState) {
-    return NextResponse.json({ error: 'Endereco de entrega obrigatorio' }, { status: 400 })
+    return apiError('Endereco de entrega obrigatorio')
   }
-
   if (!shippingMethod || shippingCost == null) {
-    return NextResponse.json({ error: 'Metodo e custo de envio obrigatorios' }, { status: 400 })
+    return apiError('Metodo e custo de envio obrigatorios')
+  }
+  if (!paymentMethod || !['PIX', 'CARD'].includes(paymentMethod)) {
+    return apiError('Metodo de pagamento invalido')
   }
 
-  if (!paymentMethod || !['PIX', 'CARD'].includes(paymentMethod)) {
-    return NextResponse.json({ error: 'Metodo de pagamento invalido' }, { status: 400 })
+  // SECURITY: Validate email format
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  if (!emailRegex.test(email)) {
+    return apiError('Email invalido')
   }
+
+  // SECURITY: Validate CPF format (11 digits)
+  const cpfClean = cpf.replace(/\D/g, '')
+  if (cpfClean.length !== 11) {
+    return apiError('CPF invalido')
+  }
+
+  // SECURITY: Validate CEP format (8 digits)
+  const cepClean = shippingCep.replace(/\D/g, '')
+  if (cepClean.length !== 8) {
+    return apiError('CEP invalido')
+  }
+
+  // SECURITY: Validate quantity bounds
+  for (const item of items) {
+    if (!Number.isInteger(item.quantity) || item.quantity < 1 || item.quantity > 100) {
+      return apiError('Quantidade invalida')
+    }
+  }
+
+  // SECURITY: Server-side shipping cost verification - do not trust client value
+  if (typeof shippingCost !== 'number' || shippingCost < 0) {
+    return apiError('Custo de frete invalido')
+  }
+
+  const shippingOptions = await calculateShipping(cepClean, 1000)
+  const matchedOption = shippingOptions.find(
+    (opt) => opt.method === shippingMethod
+  )
+  if (!matchedOption) {
+    return apiError('Metodo de envio invalido para este CEP')
+  }
+  // Allow a small tolerance for rounding, but reject manipulation
+  if (Math.abs(shippingCost - matchedOption.price) > 1) {
+    return apiError('Custo de frete divergente. Recalcule o frete.')
+  }
+  // Use the server-calculated cost, not the client-submitted one
+  const verifiedShippingCost = matchedOption.price
 
   try {
     const order = await prisma.$transaction(async (tx) => {
       // 1. Resolve coupon discount
       let discountAmount = new Decimal(0)
+      let resolvedCoupon: Awaited<ReturnType<typeof tx.coupon.findUnique>> = null
+
       if (couponCode) {
-        const coupon = await tx.coupon.findUnique({ where: { code: couponCode } })
-        if (!coupon) throw new Error('Cupom invalido')
-        if (!coupon.active) throw new Error('Cupom inativo')
+        resolvedCoupon = await tx.coupon.findUnique({ where: { code: couponCode } })
+        if (!resolvedCoupon) throw new Error('Cupom invalido')
+        if (!resolvedCoupon.active) throw new Error('Cupom inativo')
 
         const now = new Date()
-        if (now < coupon.validFrom || now > coupon.validUntil) {
+        if (now < resolvedCoupon.validFrom || now > resolvedCoupon.validUntil) {
           throw new Error('Cupom fora da validade')
         }
-        if (coupon.usageLimit && coupon.usageCount >= coupon.usageLimit) {
+        if (resolvedCoupon.usageLimit && resolvedCoupon.usageCount >= resolvedCoupon.usageLimit) {
           throw new Error('Cupom esgotado')
         }
-
-        // We'll calculate discount after subtotal is known; store coupon for later
-        var resolvedCoupon = coupon
       }
 
       // 2. Process items: check stock, decrement, build order items
@@ -139,7 +159,6 @@ export async function POST(request: NextRequest) {
             throw new Error(`Estoque insuficiente para ${product.name} - ${variation.name}`)
           }
 
-          // Decrement variation stock
           const updated = await tx.productVariation.update({
             where: { id: variation.id },
             data: { stock: { decrement: item.quantity } },
@@ -155,7 +174,6 @@ export async function POST(request: NextRequest) {
             throw new Error(`Estoque insuficiente para ${product.name}`)
           }
 
-          // Decrement product stock
           const updated = await tx.product.update({
             where: { id: product.id },
             data: { stock: { decrement: item.quantity } },
@@ -184,7 +202,7 @@ export async function POST(request: NextRequest) {
       }
 
       // 3. Apply coupon discount
-      if (resolvedCoupon!) {
+      if (resolvedCoupon) {
         if (resolvedCoupon.minOrderValue && subtotal.lt(resolvedCoupon.minOrderValue)) {
           throw new Error(`Valor minimo do pedido para este cupom: R$ ${resolvedCoupon.minOrderValue}`)
         }
@@ -195,55 +213,40 @@ export async function POST(request: NextRequest) {
           discountAmount = resolvedCoupon.discountValue
         }
 
-        // Cap discount to subtotal
         if (discountAmount.gt(subtotal)) {
           discountAmount = subtotal
         }
 
-        // Increment coupon usage
         await tx.coupon.update({
           where: { id: resolvedCoupon.id },
           data: { usageCount: { increment: 1 } },
         })
       }
 
-      const shippingCostDecimal = new Decimal(shippingCost)
+      const shippingCostDecimal = new Decimal(verifiedShippingCost)
       const total = subtotal.sub(discountAmount).add(shippingCostDecimal)
 
       // 4. Create order
-      const createdOrder = await tx.order.create({
+      return tx.order.create({
         data: {
-          customerId,
-          customerName,
-          email,
-          phone,
-          cpf,
-          shippingCep,
-          shippingStreet,
-          shippingNumber,
+          customerId: auth.customerId,
+          customerName, email, phone, cpf,
+          shippingCep, shippingStreet, shippingNumber,
           shippingComplement: shippingComplement || null,
-          shippingNeighborhood,
-          shippingCity,
-          shippingState,
+          shippingNeighborhood, shippingCity, shippingState,
           shippingMethod,
           shippingCost: shippingCostDecimal,
-          subtotal,
-          discount: discountAmount,
-          total,
+          subtotal, discount: discountAmount, total,
           couponCode: couponCode || null,
           paymentMethod,
-          items: {
-            create: orderItemsData,
-          },
+          items: { create: orderItemsData },
         },
         include: { items: true },
       })
-
-      return createdOrder
     })
 
     // 5. Create payment outside the transaction
-    let paymentData: any = {}
+    let paymentData: Record<string, unknown> = {}
     if (paymentMethod === 'PIX') {
       paymentData = await paymentProvider.createPixPayment(order)
     } else if (paymentMethod === 'CARD' && cardToken) {
@@ -254,21 +257,20 @@ export async function POST(request: NextRequest) {
           where: { id: order.id },
           data: {
             paymentStatus: 'CONFIRMED',
-            paymentExternalId: paymentData.transactionId,
+            paymentExternalId: paymentData.transactionId as string,
           },
         })
       }
     }
 
     // Send order confirmation email (non-blocking)
-    const orderWithItems = order as typeof order & { items: Array<{ productName: string; quantity: number; unitPrice: { toNumber(): number } | number }> }
     sendOrderConfirmation({
       id: order.id,
       orderNumber: order.orderNumber,
       email: order.email,
       customerName: order.customerName,
       total: Number(order.total),
-      items: orderWithItems.items.map((i) => ({
+      items: order.items.map((i) => ({
         productName: i.productName,
         quantity: i.quantity,
         unitPrice: Number(i.unitPrice),
@@ -278,8 +280,9 @@ export async function POST(request: NextRequest) {
       paymentMethod: order.paymentMethod,
     }).catch(err => console.error('Email send failed:', err))
 
-    return NextResponse.json({ order, payment: paymentData }, { status: 201 })
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message || 'Erro ao criar pedido' }, { status: 400 })
+    return apiSuccess({ order, payment: paymentData }, 201)
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Erro ao criar pedido'
+    return apiError(message)
   }
 }

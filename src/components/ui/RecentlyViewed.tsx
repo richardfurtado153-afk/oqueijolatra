@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { useRecentlyViewed } from '@/hooks/useRecentlyViewed'
+import { formatPrice } from '@/lib/utils'
 
 export default function RecentlyViewed() {
   const { items } = useRecentlyViewed()
@@ -33,7 +34,7 @@ export default function RecentlyViewed() {
             <div className="flex-1 min-w-0">
               <p className="text-sm text-stone-800 font-medium truncate">{product.name}</p>
               <p className="text-sm text-amber-700 font-semibold">
-                {product.price.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                {formatPrice(product.price)}
               </p>
             </div>
           </Link>

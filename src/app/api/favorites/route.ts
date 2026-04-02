@@ -1,22 +1,12 @@
-import { NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-
-async function getCustomerId(): Promise<string | null> {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return null
-  return (session.user as { id: string }).id
-}
+import { apiSuccess, apiError, requireAuth, parseBody } from '@/lib/api'
 
 export async function GET() {
-  const customerId = await getCustomerId()
-  if (!customerId) {
-    return NextResponse.json({ error: 'Nao autenticado' }, { status: 401 })
-  }
+  const auth = await requireAuth()
+  if (auth.error) return auth.error
 
   const favorites = await prisma.favorite.findMany({
-    where: { customerId },
+    where: { customerId: auth.customerId },
     include: {
       product: {
         include: {
@@ -28,49 +18,46 @@ export async function GET() {
     orderBy: { createdAt: 'desc' },
   })
 
-  return NextResponse.json(favorites)
+  return apiSuccess(favorites)
 }
 
 export async function POST(request: Request) {
-  const customerId = await getCustomerId()
-  if (!customerId) {
-    return NextResponse.json({ error: 'Nao autenticado' }, { status: 401 })
-  }
+  const auth = await requireAuth()
+  if (auth.error) return auth.error
 
-  const { productId } = await request.json()
-  if (!productId) {
-    return NextResponse.json({ error: 'productId obrigatorio' }, { status: 400 })
-  }
+  const parsed = await parseBody<{ productId: string }>(request)
+  if (parsed.error) return parsed.error
+
+  const { productId } = parsed.data
+  if (!productId) return apiError('productId obrigatorio')
 
   const existing = await prisma.favorite.findUnique({
-    where: { customerId_productId: { customerId, productId } },
+    where: { customerId_productId: { customerId: auth.customerId, productId } },
   })
-
   if (existing) {
-    return NextResponse.json({ error: 'Produto ja esta nos favoritos' }, { status: 409 })
+    return apiError('Produto ja esta nos favoritos', 409)
   }
 
   const favorite = await prisma.favorite.create({
-    data: { customerId, productId },
+    data: { customerId: auth.customerId, productId },
   })
 
-  return NextResponse.json(favorite, { status: 201 })
+  return apiSuccess(favorite, 201)
 }
 
 export async function DELETE(request: Request) {
-  const customerId = await getCustomerId()
-  if (!customerId) {
-    return NextResponse.json({ error: 'Nao autenticado' }, { status: 401 })
-  }
+  const auth = await requireAuth()
+  if (auth.error) return auth.error
 
-  const { productId } = await request.json()
-  if (!productId) {
-    return NextResponse.json({ error: 'productId obrigatorio' }, { status: 400 })
-  }
+  const parsed = await parseBody<{ productId: string }>(request)
+  if (parsed.error) return parsed.error
+
+  const { productId } = parsed.data
+  if (!productId) return apiError('productId obrigatorio')
 
   await prisma.favorite.deleteMany({
-    where: { customerId, productId },
+    where: { customerId: auth.customerId, productId },
   })
 
-  return NextResponse.json({ success: true })
+  return apiSuccess({ success: true })
 }

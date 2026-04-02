@@ -1,34 +1,36 @@
+import type { Metadata } from 'next'
 import { prisma } from '@/lib/prisma'
+import { toCardData } from '@/lib/utils'
 import BannerSlider from '@/components/home/BannerSlider'
 import NewsletterBar from '@/components/home/NewsletterBar'
 import ProductShowcase from '@/components/home/ProductShowcase'
-import { type ProductCardData } from '@/components/product/ProductCard'
 
-function toCardData(
-  product: {
-    id: string
-    name: string
-    slug: string
-    price: { toNumber?: () => number } | number
-    compareAtPrice: { toNumber?: () => number } | number | null
-    images: { url: string; isMain: boolean }[]
-  }
-): ProductCardData {
-  const price = typeof product.price === 'number' ? product.price : Number(product.price)
-  const compareAtPrice = product.compareAtPrice
-    ? typeof product.compareAtPrice === 'number'
-      ? product.compareAtPrice
-      : Number(product.compareAtPrice)
-    : null
-  const mainImage = product.images.find((i) => i.isMain) || product.images[0]
-  return {
-    id: product.id,
-    name: product.name,
-    slug: product.slug,
-    price,
-    compareAtPrice,
-    image: mainImage?.url || '/placeholder.jpg',
-  }
+export const metadata: Metadata = {
+  title: 'O Queijolatra | Queijos Artesanais e Especiais',
+  description:
+    'Compre queijos artesanais brasileiros, importados, cremosos e chocolates especiais. Entrega para todo o Brasil com qualidade e frescor garantidos.',
+  alternates: { canonical: '/' },
+}
+
+const organizationJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Organization',
+  name: 'O Queijolatra',
+  url: 'https://oqueijolatra.com.br',
+  logo: 'https://oqueijolatra.com.br/logo.png',
+  sameAs: [],
+}
+
+const webSiteJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'WebSite',
+  name: 'O Queijolatra',
+  url: 'https://oqueijolatra.com.br',
+  potentialAction: {
+    '@type': 'SearchAction',
+    target: 'https://oqueijolatra.com.br/busca?q={search_term_string}',
+    'query-input': 'required name=search_term_string',
+  },
 }
 
 export default async function HomePage() {
@@ -98,6 +100,17 @@ export default async function HomePage() {
 
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(webSiteJsonLd) }}
+      />
+
+      <h1 className="sr-only">O Queijolatra - Queijos Artesanais e Especiais</h1>
+
       <BannerSlider banners={banners} />
 
       <NewsletterBar />

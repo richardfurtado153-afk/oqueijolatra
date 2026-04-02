@@ -2,6 +2,14 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { CartItem } from '@/types'
 
+function matchesItem(
+  item: CartItem,
+  productId: string,
+  variationId: string | null
+): boolean {
+  return item.productId === productId && item.variationId === variationId
+}
+
 interface CartStore {
   items: CartItem[]
   addItem: (item: Omit<CartItem, 'quantity'>, qty?: number) => void
@@ -18,13 +26,13 @@ export const useCartStore = create<CartStore>()(
       items: [],
       addItem: (item, qty = 1) => {
         set((state) => {
-          const existing = state.items.find(
-            (i) => i.productId === item.productId && i.variationId === item.variationId
+          const existing = state.items.find((i) =>
+            matchesItem(i, item.productId, item.variationId)
           )
           if (existing) {
             return {
               items: state.items.map((i) =>
-                i.productId === item.productId && i.variationId === item.variationId
+                matchesItem(i, item.productId, item.variationId)
                   ? { ...i, quantity: i.quantity + qty }
                   : i
               ),
@@ -35,9 +43,7 @@ export const useCartStore = create<CartStore>()(
       },
       removeItem: (productId, variationId) => {
         set((state) => ({
-          items: state.items.filter(
-            (i) => !(i.productId === productId && i.variationId === variationId)
-          ),
+          items: state.items.filter((i) => !matchesItem(i, productId, variationId)),
         }))
       },
       updateQuantity: (productId, variationId, qty) => {
@@ -47,7 +53,7 @@ export const useCartStore = create<CartStore>()(
         }
         set((state) => ({
           items: state.items.map((i) =>
-            i.productId === productId && i.variationId === variationId
+            matchesItem(i, productId, variationId)
               ? { ...i, quantity: qty }
               : i
           ),

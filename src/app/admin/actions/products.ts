@@ -2,25 +2,26 @@
 import { prisma } from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
+import { requireAdmin, slugify } from '@/lib/api'
 
 export async function deleteProduct(productId: string) {
+  const auth = await requireAdmin()
+  if (auth.error) throw new Error('Sem permissao')
+
   await prisma.product.delete({ where: { id: productId } })
   revalidatePath('/admin/produtos')
 }
 
 export async function createProduct(fd: FormData) {
+  const auth = await requireAdmin()
+  if (auth.error) throw new Error('Sem permissao')
+
   const name = fd.get('name') as string
-  const slug = name
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-|-$/g, '')
 
   await prisma.product.create({
     data: {
       name,
-      slug,
+      slug: slugify(name),
       sku: fd.get('sku') as string,
       description: fd.get('description') as string,
       price: parseFloat(fd.get('price') as string),
@@ -41,6 +42,9 @@ export async function createProduct(fd: FormData) {
 }
 
 export async function updateProduct(productId: string, fd: FormData) {
+  const auth = await requireAdmin()
+  if (auth.error) throw new Error('Sem permissao')
+
   await prisma.product.update({
     where: { id: productId },
     data: {

@@ -1,22 +1,15 @@
-import { NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { apiSuccess, requireAuth } from '@/lib/api'
 
 export async function GET() {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) {
-    return NextResponse.json({ error: 'Nao autenticado' }, { status: 401 })
-  }
-  const customerId = (session.user as { id: string }).id
+  const auth = await requireAuth()
+  if (auth.error) return auth.error
 
   const orders = await prisma.order.findMany({
-    where: { customerId },
-    include: {
-      items: true,
-    },
+    where: { customerId: auth.customerId },
+    include: { items: true },
     orderBy: { createdAt: 'desc' },
   })
 
-  return NextResponse.json(orders)
+  return apiSuccess(orders)
 }

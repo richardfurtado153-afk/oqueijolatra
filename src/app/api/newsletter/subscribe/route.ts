@@ -1,17 +1,25 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { generateCouponCode } from '@/lib/utils'
+import { apiSuccess, apiError, parseBody } from '@/lib/api'
 
 export async function POST(request: NextRequest) {
-  const { email } = await request.json()
-  if (!email) return NextResponse.json({ error: 'Email obrigatorio' }, { status: 400 })
+  const parsed = await parseBody<{ email: string }>(request)
+  if (parsed.error) return parsed.error
+
+  const { email: rawEmail } = parsed.data
+  if (!rawEmail) return apiError('Email obrigatorio')
+
+  // SECURITY: Validate and normalize email
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  const email = rawEmail.toLowerCase().trim()
+  if (!emailRegex.test(email)) {
+    return apiError('Email invalido')
+  }
 
   const existing = await prisma.newsletterSubscriber.findUnique({ where: { email } })
   if (existing) {
-    return NextResponse.json(
-      { error: 'Email ja cadastrado', discountCode: existing.discountCode },
-      { status: 409 }
-    )
+    return apiError('Email ja cadastrado', 409)
   }
 
   const discountCode = generateCouponCode('NEWS')
@@ -33,5 +41,5 @@ export async function POST(request: NextRequest) {
     data: { email, discountCode },
   })
 
-  return NextResponse.json({ discountCode: subscriber.discountCode }, { status: 201 })
+  return apiSuccess({ discountCode: subscriber.discountCode }, 201)
 }

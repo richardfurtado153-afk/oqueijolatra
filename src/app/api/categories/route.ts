@@ -1,5 +1,5 @@
-import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { apiSuccess } from '@/lib/api'
 
 export async function GET() {
   const categories = await prisma.category.findMany({
@@ -13,14 +13,12 @@ export async function GET() {
           _count: { select: { products: true } },
           children: {
             orderBy: { position: 'asc' },
-            include: {
-              _count: { select: { products: true } },
-            },
+            include: { _count: { select: { products: true } } },
           },
         },
       },
     },
   })
 
-  return NextResponse.json(categories)
+  return apiSuccess(categories)
 }

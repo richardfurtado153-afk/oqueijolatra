@@ -60,6 +60,8 @@ export default function ProductInfo({
 
   const installmentPrice = activePrice / 3
 
+  const [added, setAdded] = useState(false)
+
   function handleAddToCart() {
     addItem(
       {
@@ -72,6 +74,8 @@ export default function ProductInfo({
       },
       quantity
     )
+    setAdded(true)
+    setTimeout(() => setAdded(false), 2000)
   }
 
   return (
@@ -134,22 +138,26 @@ export default function ProductInfo({
 
       {/* Variations */}
       {variations.length > 0 && (
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-stone-700">Variacao:</label>
+        <div className="space-y-2" role="radiogroup" aria-label="Variacao do produto">
+          <span className="text-sm font-medium text-stone-700">Variacao:</span>
           <div className="flex flex-wrap gap-2">
             {variations.map((v) => (
               <button
                 key={v.id}
                 type="button"
+                role="radio"
+                aria-checked={selectedVariation?.id === v.id}
+                aria-label={`${v.name}${v.stock <= 0 ? ' - Indisponivel' : ''}`}
                 onClick={() => {
                   setSelectedVariation(v)
                   setQuantity(1)
+                  setAdded(false)
                 }}
-                className={`px-4 py-2 text-sm rounded-lg border transition-colors ${
+                className={`px-4 py-2 text-sm rounded-lg border transition-all duration-200 ${
                   selectedVariation?.id === v.id
-                    ? 'border-amber-600 bg-amber-50 text-amber-800 font-medium'
+                    ? 'border-amber-600 bg-amber-50 text-amber-800 font-medium ring-1 ring-amber-600'
                     : 'border-stone-300 text-stone-700 hover:border-stone-400'
-                } ${v.stock <= 0 ? 'opacity-40 cursor-not-allowed' : ''}`}
+                } ${v.stock <= 0 ? 'opacity-40 cursor-not-allowed line-through' : ''}`}
                 disabled={v.stock <= 0}
               >
                 {v.name}
@@ -160,29 +168,52 @@ export default function ProductInfo({
       )}
 
       {/* Stock status */}
-      <div>
+      <div aria-live="polite">
         {isAvailable ? (
-          <span className="text-sm font-medium text-green-600">Disponivel</span>
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-green-500" aria-hidden="true" />
+            <span className="text-sm font-medium text-green-600">Disponivel</span>
+            {activeStock <= 5 && (
+              <span className="text-xs text-amber-600 font-medium">
+                ({activeStock} {activeStock === 1 ? 'restante' : 'restantes'})
+              </span>
+            )}
+          </div>
         ) : (
-          <span className="text-sm font-medium text-red-600">Indisponivel</span>
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-red-500" aria-hidden="true" />
+            <span className="text-sm font-medium text-red-600">Indisponivel</span>
+          </div>
         )}
       </div>
 
       {/* Quantity + Add to cart */}
       {isAvailable && (
-        <div className="flex items-center gap-4 flex-wrap">
-          <QuantitySelector
-            value={quantity}
-            onChange={setQuantity}
-            min={1}
-            max={activeStock}
-          />
-          <button
-            onClick={handleAddToCart}
-            className="flex-1 min-w-[160px] bg-amber-700 text-white font-semibold py-3 px-6 rounded-lg hover:bg-amber-800 transition-colors text-center"
-          >
-            Comprar
-          </button>
+        <div className="space-y-3">
+          <div className="flex items-center gap-4 flex-wrap">
+            <QuantitySelector
+              value={quantity}
+              onChange={setQuantity}
+              min={1}
+              max={activeStock}
+            />
+            <button
+              onClick={handleAddToCart}
+              aria-label={`Adicionar ${quantity} ${quantity === 1 ? 'unidade' : 'unidades'} ao carrinho`}
+              className={`flex-1 min-w-[160px] font-semibold py-3 px-6 rounded-lg transition-all duration-200 text-center ${
+                added
+                  ? 'bg-green-600 text-white scale-[0.98]'
+                  : 'bg-amber-700 text-white hover:bg-amber-800 active:scale-[0.98]'
+              }`}
+            >
+              {added ? 'Adicionado ao carrinho!' : 'Comprar'}
+            </button>
+          </div>
+          {added && (
+            <p className="text-sm text-green-600 font-medium animate-[fade-in_0.3s_ease-out]" role="status">
+              Produto adicionado ao carrinho com sucesso!
+            </p>
+          )}
         </div>
       )}
     </div>

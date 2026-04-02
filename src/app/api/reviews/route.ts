@@ -1,11 +1,10 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { apiSuccess, apiError, requireAuth, parseBody } from '@/lib/api'
 
 export async function GET(request: NextRequest) {
   const productId = request.nextUrl.searchParams.get('productId')
-  if (!productId) return NextResponse.json({ error: 'productId required' }, { status: 400 })
+  if (!productId) return apiError('productId required')
 
   const reviews = await prisma.review.findMany({
     where: { productId, approved: true },
@@ -17,48 +16,58 @@ export async function GET(request: NextRequest) {
     ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
     : null
 
-  return NextResponse.json({ reviews, avg, total: reviews.length })
+  return apiSuccess({ reviews, avg, total: reviews.length })
+}
+
+interface ReviewBody {
+  productId: string
+  rating: number
+  title: string
+  body: string
 }
 
 export async function POST(request: NextRequest) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: 'Você precisa estar logado para avaliar' }, { status: 401 })
-  }
+  const auth = await requireAuth()
+  if (auth.error) return auth.error
 
-  const { productId, rating, title, body } = await request.json()
+  const parsed = await parseBody<ReviewBody>(request)
+  if (parsed.error) return parsed.error
+  const { productId, rating, title, body } = parsed.data
+
   if (!productId || !rating || !title || !body) {
-    return NextResponse.json({ error: 'Todos os campos são obrigatórios' }, { status: 400 })
+    return apiError('Todos os campos sao obrigatorios')
   }
   if (rating < 1 || rating > 5) {
-    return NextResponse.json({ error: 'Nota deve ser de 1 a 5' }, { status: 400 })
+    return apiError('Nota deve ser de 1 a 5')
   }
 
-  // Check if customer purchased this product
+  const existing = await prisma.review.findUnique({
+    where: { customerId_productId: { customerId: auth.customerId, productId } }
+  })
+  if (existing) {
+    return apiError('Voce ja avaliou este produto', 409)
+  }
+
   const hasPurchased = await prisma.orderItem.findFirst({
     where: {
       productId,
-      order: { customerId: session.user.id, status: { in: ['DELIVERED', 'SHIPPED'] } }
+      order: { customerId: auth.customerId, status: { in: ['DELIVERED', 'SHIPPED'] } }
     }
   })
 
-  const existing = await prisma.review.findUnique({
-    where: { customerId_productId: { customerId: session.user.id, productId } }
-  })
-  if (existing) {
-    return NextResponse.json({ error: 'Você já avaliou este produto' }, { status: 409 })
-  }
-
   const review = await prisma.review.create({
     data: {
-      customerId: session.user.id,
+      customerId: auth.customerId,
       productId,
       rating,
       title,
       body,
-      approved: !!hasPurchased, // auto-approve if verified purchase
+      approved: !!hasPurchased,
     }
   })
 
-  return NextResponse.json({ review, message: hasPurchased ? 'Avaliação publicada!' : 'Avaliação enviada para moderação.' })
+  return apiSuccess({
+    review,
+    message: hasPurchased ? 'Avaliacao publicada!' : 'Avaliacao enviada para moderacao.',
+  })
 }

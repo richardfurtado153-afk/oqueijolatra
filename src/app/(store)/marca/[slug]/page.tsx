@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { prisma } from '@/lib/prisma'
-import { type ProductCardData } from '@/components/product/ProductCard'
+import { toCardData } from '@/lib/utils'
 import Breadcrumb from '@/components/category/Breadcrumb'
 import ProductGrid from '@/components/product/ProductGrid'
 import CategoryPagination from '@/components/category/CategoryPagination'
@@ -11,34 +11,6 @@ const PRODUCTS_PER_PAGE = 16
 interface BrandPageProps {
   params: Promise<{ slug: string }>
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>
-}
-
-function toCardData(
-  product: {
-    id: string
-    name: string
-    slug: string
-    price: { toNumber?: () => number } | number
-    compareAtPrice: { toNumber?: () => number } | number | null
-    images: { url: string; isMain: boolean }[]
-  },
-): ProductCardData {
-  const price =
-    typeof product.price === 'number' ? product.price : Number(product.price)
-  const compareAtPrice = product.compareAtPrice
-    ? typeof product.compareAtPrice === 'number'
-      ? product.compareAtPrice
-      : Number(product.compareAtPrice)
-    : null
-  const mainImage = product.images.find((i) => i.isMain) || product.images[0]
-  return {
-    id: product.id,
-    name: product.name,
-    slug: product.slug,
-    price,
-    compareAtPrice,
-    image: mainImage?.url || '/placeholder.jpg',
-  }
 }
 
 export async function generateMetadata({
@@ -53,9 +25,23 @@ export async function generateMetadata({
 
   if (!brand) return {}
 
+  const desc = `Compre produtos da marca ${brand.name} na O Queijolatra. Queijos artesanais e especiais com entrega para todo o Brasil.`
+
   return {
-    title: `${brand.name} | O Queijolatra`,
-    description: `Produtos da marca ${brand.name} na O Queijolatra.`,
+    title: brand.name,
+    description: desc,
+    alternates: { canonical: `/marca/${slug}` },
+    openGraph: {
+      title: `${brand.name} | O Queijolatra`,
+      description: desc,
+      type: 'website',
+      url: `/marca/${slug}`,
+    },
+    twitter: {
+      card: 'summary',
+      title: brand.name,
+      description: desc,
+    },
   }
 }
 
@@ -94,8 +80,23 @@ export default async function BrandPage({ params, searchParams }: BrandPageProps
     { name: brand.name, href: `/marca/${brand.slug}` },
   ]
 
+  const breadcrumbJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://oqueijolatra.com.br' },
+      { '@type': 'ListItem', position: 2, name: 'Marcas', item: 'https://oqueijolatra.com.br/marca' },
+      { '@type': 'ListItem', position: 3, name: brand.name, item: `https://oqueijolatra.com.br/marca/${brand.slug}` },
+    ],
+  }
+
   return (
     <div className="max-w-7xl mx-auto px-4 py-6">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
+      />
+
       <Breadcrumb items={breadcrumbItems} />
 
       <h1 className="text-2xl font-bold text-stone-900 mt-4 mb-6">

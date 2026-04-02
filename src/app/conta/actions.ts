@@ -1,17 +1,14 @@
 'use server'
 import { prisma } from '@/lib/prisma'
-import { authOptions } from '@/lib/auth'
-import { getServerSession } from 'next-auth'
+import { getAuthenticatedUser, MIN_PASSWORD_LENGTH } from '@/lib/auth'
 import { revalidatePath } from 'next/cache'
 import bcrypt from 'bcryptjs'
 
 export async function updateProfile(fd: FormData) {
-  const session = await getServerSession(authOptions)
-  if (!(session?.user as any)?.id) throw new Error('Não autenticado')
-  const userId = (session!.user as any).id as string
+  const user = await getAuthenticatedUser()
 
   await prisma.customer.update({
-    where: { id: userId },
+    where: { id: user.id },
     data: {
       name: fd.get('name') as string,
       phone: (fd.get('phone') as string) || null,
@@ -22,43 +19,39 @@ export async function updateProfile(fd: FormData) {
 }
 
 export async function changePassword(fd: FormData) {
-  const session = await getServerSession(authOptions)
-  if (!(session?.user as any)?.id) throw new Error('Não autenticado')
-  const userId = (session!.user as any).id as string
+  const user = await getAuthenticatedUser()
 
   const current = fd.get('currentPassword') as string
   const newPass = fd.get('newPassword') as string
   const confirm = fd.get('confirmPassword') as string
 
-  if (newPass !== confirm) throw new Error('As senhas não coincidem')
-  if (newPass.length < 8) throw new Error('Mínimo 8 caracteres')
+  if (newPass !== confirm) throw new Error('As senhas nao coincidem')
+  if (newPass.length < MIN_PASSWORD_LENGTH) throw new Error(`Minimo ${MIN_PASSWORD_LENGTH} caracteres`)
 
-  const customer = await prisma.customer.findUnique({ where: { id: userId } })
-  if (!customer) throw new Error('Usuário não encontrado')
+  const customer = await prisma.customer.findUnique({ where: { id: user.id } })
+  if (!customer) throw new Error('Usuario nao encontrado')
 
   const valid = await bcrypt.compare(current, customer.passwordHash)
   if (!valid) throw new Error('Senha atual incorreta')
 
   const hash = await bcrypt.hash(newPass, 10)
-  await prisma.customer.update({ where: { id: userId }, data: { passwordHash: hash } })
+  await prisma.customer.update({ where: { id: user.id }, data: { passwordHash: hash } })
 }
 
 export async function createAddress(fd: FormData) {
-  const session = await getServerSession(authOptions)
-  if (!(session?.user as any)?.id) throw new Error('Não autenticado')
-  const userId = (session!.user as any).id as string
+  const user = await getAuthenticatedUser()
 
   const isDefault = fd.get('isDefault') === 'on'
   if (isDefault) {
     await prisma.customerAddress.updateMany({
-      where: { customerId: userId },
+      where: { customerId: user.id },
       data: { isDefault: false }
     })
   }
 
   await prisma.customerAddress.create({
     data: {
-      customerId: userId,
+      customerId: user.id,
       label: (fd.get('label') as string) || 'Casa',
       cep: fd.get('cep') as string,
       street: fd.get('street') as string,
@@ -74,18 +67,20 @@ export async function createAddress(fd: FormData) {
 }
 
 export async function deleteAddress(addressId: string) {
-  const session = await getServerSession(authOptions)
-  if (!(session?.user as any)?.id) throw new Error('Não autenticado')
-  const userId = (session!.user as any).id as string
-  await prisma.customerAddress.deleteMany({ where: { id: addressId, customerId: userId } })
+  const user = await getAuthenticatedUser()
+  await prisma.customerAddress.deleteMany({ where: { id: addressId, customerId: user.id } })
   revalidatePath('/conta/enderecos')
 }
 
 export async function setDefaultAddress(addressId: string) {
-  const session = await getServerSession(authOptions)
-  if (!(session?.user as any)?.id) throw new Error('Não autenticado')
-  const userId = (session!.user as any).id as string
-  await prisma.customerAddress.updateMany({ where: { customerId: userId }, data: { isDefault: false } })
+  const user = await getAuthenticatedUser()
+  // SECURITY: Verify the address belongs to the current user before updating
+  const address = await prisma.customerAddress.findFirst({
+    where: { id: addressId, customerId: user.id },
+  })
+  if (!address) throw new Error('Endereco nao encontrado')
+
+  await prisma.customerAddress.updateMany({ where: { customerId: user.id }, data: { isDefault: false } })
   await prisma.customerAddress.update({ where: { id: addressId }, data: { isDefault: true } })
   revalidatePath('/conta/enderecos')
 }

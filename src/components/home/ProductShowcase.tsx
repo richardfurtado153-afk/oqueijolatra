@@ -1,5 +1,6 @@
+import type { ProductCardData } from '@/types'
 import Carousel from '@/components/ui/Carousel'
-import ProductCard, { type ProductCardData } from '@/components/product/ProductCard'
+import ProductCard from '@/components/product/ProductCard'
 
 interface ProductShowcaseProps {
   title: string

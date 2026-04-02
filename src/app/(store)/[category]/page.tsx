@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { prisma } from '@/lib/prisma'
-import { type ProductCardData } from '@/components/product/ProductCard'
+import { toCardData } from '@/lib/utils'
 import Breadcrumb from '@/components/category/Breadcrumb'
 import CategorySidebar from '@/components/category/CategorySidebar'
 import ProductGrid from '@/components/product/ProductGrid'
@@ -12,34 +12,6 @@ const PRODUCTS_PER_PAGE = 16
 interface CategoryPageProps {
   params: Promise<{ category: string }>
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>
-}
-
-function toCardData(
-  product: {
-    id: string
-    name: string
-    slug: string
-    price: { toNumber?: () => number } | number
-    compareAtPrice: { toNumber?: () => number } | number | null
-    images: { url: string; isMain: boolean }[]
-  },
-): ProductCardData {
-  const price =
-    typeof product.price === 'number' ? product.price : Number(product.price)
-  const compareAtPrice = product.compareAtPrice
-    ? typeof product.compareAtPrice === 'number'
-      ? product.compareAtPrice
-      : Number(product.compareAtPrice)
-    : null
-  const mainImage = product.images.find((i) => i.isMain) || product.images[0]
-  return {
-    id: product.id,
-    name: product.name,
-    slug: product.slug,
-    price,
-    compareAtPrice,
-    image: mainImage?.url || '/placeholder.jpg',
-  }
 }
 
 export async function generateMetadata({
@@ -54,11 +26,25 @@ export async function generateMetadata({
 
   if (!category) return {}
 
+  const desc =
+    category.description ||
+    `Compre ${category.name} na O Queijolatra. Os melhores queijos artesanais com entrega para todo o Brasil.`
+
   return {
-    title: `${category.name} | O Queijolatra`,
-    description:
-      category.description ||
-      `Encontre os melhores produtos na categoria ${category.name}.`,
+    title: category.name,
+    description: desc,
+    alternates: { canonical: `/${slug}` },
+    openGraph: {
+      title: `${category.name} | O Queijolatra`,
+      description: desc,
+      type: 'website',
+      url: `/${slug}`,
+    },
+    twitter: {
+      card: 'summary',
+      title: category.name,
+      description: desc,
+    },
   }
 }
 
@@ -179,8 +165,32 @@ export default async function CategoryPage({
   }
   breadcrumbItems.push({ name: category.name, href: `/${category.slug}` })
 
+  const breadcrumbJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      {
+        '@type': 'ListItem',
+        position: 1,
+        name: 'Home',
+        item: 'https://oqueijolatra.com.br',
+      },
+      ...breadcrumbItems.map((item, index) => ({
+        '@type': 'ListItem',
+        position: index + 2,
+        name: item.name,
+        item: `https://oqueijolatra.com.br${item.href}`,
+      })),
+    ],
+  }
+
   return (
     <div className="max-w-7xl mx-auto px-4 py-6">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
+      />
+
       <Breadcrumb items={breadcrumbItems} />
 
       <h1 className="text-2xl font-bold text-stone-900 mt-4 mb-6">

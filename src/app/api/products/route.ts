@@ -1,5 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { apiSuccess } from '@/lib/api'
 
 export async function GET(request: NextRequest) {
   const { searchParams } = request.nextUrl
@@ -13,22 +14,16 @@ export async function GET(request: NextRequest) {
   const bestseller = searchParams.get('bestseller')
   const isNew = searchParams.get('new')
 
-  const where: Record<string, unknown> = {
-    status: 'AVAILABLE',
-  }
+  const where: Record<string, unknown> = { status: 'AVAILABLE' }
 
-  if (category) {
-    where.category = { slug: category }
-  }
-
-  if (brand) {
-    where.brand = { slug: brand }
-  }
+  if (category) where.category = { slug: category }
+  if (brand) where.brand = { slug: brand }
 
   if (minPrice || maxPrice) {
-    where.price = {}
-    if (minPrice) (where.price as Record<string, unknown>).gte = Number(minPrice)
-    if (maxPrice) (where.price as Record<string, unknown>).lte = Number(maxPrice)
+    const priceFilter: Record<string, number> = {}
+    if (minPrice) priceFilter.gte = Number(minPrice)
+    if (maxPrice) priceFilter.lte = Number(maxPrice)
+    where.price = priceFilter
   }
 
   if (featured === 'true') where.featured = true
@@ -51,7 +46,7 @@ export async function GET(request: NextRequest) {
     prisma.product.count({ where }),
   ])
 
-  return NextResponse.json({
+  return apiSuccess({
     products,
     total,
     page,

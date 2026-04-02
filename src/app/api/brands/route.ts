@@ -1,13 +1,11 @@
-import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { apiSuccess } from '@/lib/api'
 
 export async function GET() {
   const brands = await prisma.brand.findMany({
     orderBy: { name: 'asc' },
-    include: {
-      _count: { select: { products: true } },
-    },
+    include: { _count: { select: { products: true } } },
   })
 
-  return NextResponse.json(brands)
+  return apiSuccess(brands)
 }

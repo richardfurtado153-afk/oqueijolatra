@@ -1,12 +1,16 @@
 'use server'
 import { prisma } from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
+import { requireAdmin } from '@/lib/api'
 
 export async function updateOrderStatus(orderId: string, status: string, trackingCode?: string) {
+  const auth = await requireAdmin()
+  if (auth.error) throw new Error('Sem permissao')
+
   await prisma.order.update({
     where: { id: orderId },
     data: {
-      status: status as any,
+      status: status as 'PENDING' | 'PAID' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED',
       ...(trackingCode !== undefined ? { trackingCode: trackingCode || null } : {}),
     }
   })

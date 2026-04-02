@@ -1,15 +1,19 @@
+import type { Metadata } from 'next'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { redirect } from 'next/navigation'
 import { updateProfile, changePassword } from '../actions'
 
+export const metadata: Metadata = {
+  title: 'Meu Perfil',
+}
+
 export default async function ProfilePage() {
   const session = await getServerSession(authOptions)
-  if (!(session?.user as any)?.id) redirect('/conta/login')
-  const userId = (session!.user as any).id as string
+  if (!session?.user?.id) redirect('/conta/login')
 
-  const customer = await prisma.customer.findUnique({ where: { id: userId } })
+  const customer = await prisma.customer.findUnique({ where: { id: session.user.id } })
   if (!customer) redirect('/conta/login')
 
   return (

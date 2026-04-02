@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
@@ -5,13 +6,16 @@ import { redirect } from 'next/navigation'
 import { createAddress, deleteAddress, setDefaultAddress } from '../actions'
 import AddressForm from './AddressForm'
 
+export const metadata: Metadata = {
+  title: 'Meus Enderecos',
+}
+
 export default async function AddressesPage() {
   const session = await getServerSession(authOptions)
-  if (!(session?.user as any)?.id) redirect('/conta/login')
-  const userId = (session!.user as any).id as string
+  if (!session?.user?.id) redirect('/conta/login')
 
   const addresses = await prisma.customerAddress.findMany({
-    where: { customerId: userId },
+    where: { customerId: session.user.id },
     orderBy: [{ isDefault: 'desc' }],
   })
 

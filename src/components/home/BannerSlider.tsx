@@ -30,8 +30,16 @@ export default function BannerSlider({ banners }: BannerSliderProps) {
 
   if (banners.length === 0) return null
 
+  function prev() {
+    setCurrent((p) => (p - 1 + banners.length) % banners.length)
+  }
+
   return (
-    <section className="relative w-full h-[400px] md:h-[500px] overflow-hidden">
+    <section
+      className="relative w-full h-[300px] sm:h-[400px] md:h-[500px] overflow-hidden"
+      aria-roledescription="carrossel"
+      aria-label="Banners promocionais"
+    >
       {banners.map((banner, index) => (
         <Link
           key={banner.id}
@@ -39,6 +47,8 @@ export default function BannerSlider({ banners }: BannerSliderProps) {
           className={`absolute inset-0 transition-opacity duration-700 ${
             index === current ? 'opacity-100 z-10' : 'opacity-0 z-0'
           }`}
+          aria-hidden={index !== current}
+          tabIndex={index === current ? 0 : -1}
         >
           <Image
             src={banner.imageUrl}
@@ -58,20 +68,45 @@ export default function BannerSlider({ banners }: BannerSliderProps) {
       ))}
 
       {banners.length > 1 && (
-        <div className="absolute bottom-4 left-0 right-0 z-20 flex justify-center gap-2">
-          {banners.map((_, index) => (
-            <button
-              key={index}
-              onClick={() => setCurrent(index)}
-              className={`w-3 h-3 rounded-full transition-colors ${
-                index === current
-                  ? 'bg-white'
-                  : 'bg-white/50 hover:bg-white/75'
-              }`}
-              aria-label={`Ir para banner ${index + 1}`}
-            />
-          ))}
-        </div>
+        <>
+          {/* Previous / Next buttons */}
+          <button
+            onClick={prev}
+            className="absolute left-3 top-1/2 -translate-y-1/2 z-20 bg-black/30 hover:bg-black/50 backdrop-blur-sm text-white w-10 h-10 rounded-full flex items-center justify-center transition-colors"
+            aria-label="Banner anterior"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+          <button
+            onClick={next}
+            className="absolute right-3 top-1/2 -translate-y-1/2 z-20 bg-black/30 hover:bg-black/50 backdrop-blur-sm text-white w-10 h-10 rounded-full flex items-center justify-center transition-colors"
+            aria-label="Proximo banner"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
+
+          {/* Dots */}
+          <div className="absolute bottom-4 left-0 right-0 z-20 flex justify-center gap-2" role="tablist" aria-label="Selecionar banner">
+            {banners.map((_, index) => (
+              <button
+                key={index}
+                onClick={() => setCurrent(index)}
+                role="tab"
+                aria-selected={index === current}
+                className={`w-3 h-3 rounded-full transition-all duration-300 ${
+                  index === current
+                    ? 'bg-white w-6'
+                    : 'bg-white/50 hover:bg-white/75'
+                }`}
+                aria-label={`Banner ${index + 1} de ${banners.length}`}
+              />
+            ))}
+          </div>
+        </>
       )}
     </section>
   )

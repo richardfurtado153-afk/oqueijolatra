@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { prisma } from '@/lib/prisma'
-import { type ProductCardData } from '@/components/product/ProductCard'
+import { toCardData } from '@/lib/utils'
 import Breadcrumb from '@/components/category/Breadcrumb'
 import ProductGallery from '@/components/product/ProductGallery'
 import ProductInfo from '@/components/product/ProductInfo'
@@ -13,34 +13,6 @@ import ProductReviews from '@/components/ProductReviews'
 
 interface ProductPageProps {
   params: Promise<{ slug: string }>
-}
-
-function toCardData(
-  product: {
-    id: string
-    name: string
-    slug: string
-    price: { toNumber?: () => number } | number
-    compareAtPrice: { toNumber?: () => number } | number | null
-    images: { url: string; isMain: boolean }[]
-  },
-): ProductCardData {
-  const price =
-    typeof product.price === 'number' ? product.price : Number(product.price)
-  const compareAtPrice = product.compareAtPrice
-    ? typeof product.compareAtPrice === 'number'
-      ? product.compareAtPrice
-      : Number(product.compareAtPrice)
-    : null
-  const mainImage = product.images.find((i) => i.isMain) || product.images[0]
-  return {
-    id: product.id,
-    name: product.name,
-    slug: product.slug,
-    price,
-    compareAtPrice,
-    image: mainImage?.url || '/placeholder.jpg',
-  }
 }
 
 export async function generateMetadata({
@@ -57,15 +29,24 @@ export async function generateMetadata({
 
   const price = Number(product.price)
 
+  const desc =
+    product.description?.replace(/<[^>]*>/g, '').slice(0, 160) ||
+    `Compre ${product.name} na O Queijolatra. Queijos artesanais com entrega para todo o Brasil.`
+
   return {
-    title: `${product.name} | O Queijolatra`,
-    description:
-      product.description?.replace(/<[^>]*>/g, '').slice(0, 160) ||
-      `Compre ${product.name} na O Queijolatra.`,
+    title: product.name,
+    description: desc,
+    alternates: { canonical: `/produto/${slug}` },
     openGraph: {
+      title: `${product.name} | O Queijolatra`,
+      description: desc,
+      type: 'website',
+      url: `/produto/${slug}`,
+    },
+    twitter: {
+      card: 'summary_large_image',
       title: product.name,
-      description:
-        product.description?.replace(/<[^>]*>/g, '').slice(0, 160) || undefined,
+      description: desc,
     },
     other: {
       'product:price:amount': price.toFixed(2),
@@ -141,7 +122,27 @@ export default async function ProductPage({ params }: ProductPageProps) {
     stock: v.stock,
   }))
 
-  // JSON-LD structured data
+  // BreadcrumbList JSON-LD
+  const breadcrumbJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      {
+        '@type': 'ListItem',
+        position: 1,
+        name: 'Home',
+        item: 'https://oqueijolatra.com.br',
+      },
+      ...breadcrumbItems.map((item, index) => ({
+        '@type': 'ListItem',
+        position: index + 2,
+        name: item.name,
+        item: `https://oqueijolatra.com.br${item.href}`,
+      })),
+    ],
+  }
+
+  // Product JSON-LD structured data
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'Product',
@@ -171,6 +172,10 @@ export default async function ProductPage({ params }: ProductPageProps) {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
       />
 
       <ProductPageTracker
@@ -228,7 +233,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
       {/* Description */}
       {product.description && (
         <section className="mt-10">
-          <h2 className="text-xl font-bold text-stone-900 mb-4">Descricao</h2>
+          <h2 className="text-xl font-bold text-stone-900 mb-4">{"Descri\u00e7\u00e3o"}</h2>
           <div
             className="prose prose-stone max-w-none"
             dangerouslySetInnerHTML={{ __html: product.description }}

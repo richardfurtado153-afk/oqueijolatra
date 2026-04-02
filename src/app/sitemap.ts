@@ -5,8 +5,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = process.env.NEXTAUTH_URL || 'https://oqueijolatra.com.br'
 
   let products: { slug: string; updatedAt: Date }[] = []
-  let categories: { slug: string }[] = []
-  let brands: { slug: string }[] = []
+  let categories: { slug: string; updatedAt: Date }[] = []
+  let brands: { slug: string; updatedAt: Date }[] = []
 
   try {
     ;[products, categories, brands] = await Promise.all([
@@ -15,10 +15,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         select: { slug: true, updatedAt: true },
       }),
       prisma.category.findMany({
-        select: { slug: true },
+        select: { slug: true, updatedAt: true },
       }),
       prisma.brand.findMany({
-        select: { slug: true },
+        select: { slug: true, updatedAt: true },
       }),
     ])
   } catch {
@@ -36,7 +36,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   const categoryEntries: MetadataRoute.Sitemap = categories.map((category) => ({
     url: `${baseUrl}/${category.slug}`,
-    lastModified: new Date(),
+    lastModified: category.updatedAt,
     changeFrequency: 'weekly',
     priority: 0.8,
   }))
@@ -50,9 +50,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   const brandEntries: MetadataRoute.Sitemap = brands.map((brand) => ({
     url: `${baseUrl}/marca/${brand.slug}`,
-    lastModified: new Date(),
+    lastModified: brand.updatedAt,
     changeFrequency: 'weekly',
-    priority: 0.5,
+    priority: 0.6,
   }))
 
   return [...staticEntries, ...categoryEntries, ...productEntries, ...brandEntries]

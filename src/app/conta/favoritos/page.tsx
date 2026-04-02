@@ -2,38 +2,13 @@
 
 import { useState, useEffect } from 'react'
 import ProductGrid from '@/components/product/ProductGrid'
-import { type ProductCardData } from '@/components/product/ProductCard'
+import { toCardData } from '@/lib/utils'
+import type { PrismaProductWithImages } from '@/types'
 
 interface FavoriteItem {
   id: string
   productId: string
-  product: {
-    id: string
-    name: string
-    slug: string
-    price: number | { toNumber?: () => number }
-    compareAtPrice: number | { toNumber?: () => number } | null
-    images: { url: string; isMain: boolean }[]
-  }
-}
-
-function toCardData(fav: FavoriteItem): ProductCardData {
-  const price =
-    typeof fav.product.price === 'number' ? fav.product.price : Number(fav.product.price)
-  const compareAtPrice = fav.product.compareAtPrice
-    ? typeof fav.product.compareAtPrice === 'number'
-      ? fav.product.compareAtPrice
-      : Number(fav.product.compareAtPrice)
-    : null
-  const mainImage = fav.product.images.find((i) => i.isMain) || fav.product.images[0]
-  return {
-    id: fav.product.id,
-    name: fav.product.name,
-    slug: fav.product.slug,
-    price,
-    compareAtPrice,
-    image: mainImage?.url || '/placeholder.jpg',
-  }
+  product: PrismaProductWithImages
 }
 
 export default function FavoritesPage() {
@@ -77,7 +52,18 @@ export default function FavoritesPage() {
     return (
       <div>
         <h1 className="text-2xl font-bold text-stone-900 mb-6">Favoritos</h1>
-        <p className="text-stone-500">Carregando...</p>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="bg-white rounded-xl shadow-sm overflow-hidden animate-pulse">
+              <div className="w-full aspect-square bg-stone-200" />
+              <div className="p-3 space-y-2">
+                <div className="h-4 bg-stone-200 rounded w-full" />
+                <div className="h-4 bg-stone-200 rounded w-2/3" />
+                <div className="h-6 bg-stone-200 rounded w-1/2" />
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     )
   }
@@ -87,9 +73,16 @@ export default function FavoritesPage() {
       <h1 className="text-2xl font-bold text-stone-900 mb-6">Favoritos</h1>
 
       {favorites.length === 0 ? (
-        <p className="text-stone-500 text-center py-16">
-          Voce ainda nao tem produtos favoritos.
-        </p>
+        <div className="text-center py-16">
+          <svg xmlns="http://www.w3.org/2000/svg" className="w-16 h-16 mx-auto text-stone-300 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+          </svg>
+          <p className="text-lg font-medium text-stone-600 mb-1">Nenhum favorito ainda</p>
+          <p className="text-sm text-stone-400 mb-4">Explore nossos produtos e salve seus favoritos.</p>
+          <a href="/" className="inline-block bg-amber-600 text-white font-semibold px-6 py-2.5 rounded-lg hover:bg-amber-700 transition-colors">
+            Explorar produtos
+          </a>
+        </div>
       ) : (
         <div>
           <div className="flex flex-wrap gap-2 mb-4">
@@ -103,7 +96,7 @@ export default function FavoritesPage() {
               </button>
             ))}
           </div>
-          <ProductGrid products={favorites.map(toCardData)} />
+          <ProductGrid products={favorites.map((fav) => toCardData(fav.product))} />
         </div>
       )}
     </div>

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { formatPrice } from '@/lib/utils'
+import { formatPrice, formatCep } from '@/lib/utils'
 import type { ShippingOption } from '@/types'
 
 export default function ShippingCalculator() {
@@ -9,14 +9,6 @@ export default function ShippingCalculator() {
   const [loading, setLoading] = useState(false)
   const [options, setOptions] = useState<ShippingOption[]>([])
   const [error, setError] = useState('')
-
-  function formatCep(value: string): string {
-    const digits = value.replace(/\D/g, '').slice(0, 8)
-    if (digits.length > 5) {
-      return `${digits.slice(0, 5)}-${digits.slice(5)}`
-    }
-    return digits
-  }
 
   function handleCepChange(e: React.ChangeEvent<HTMLInputElement>) {
     setCep(formatCep(e.target.value))

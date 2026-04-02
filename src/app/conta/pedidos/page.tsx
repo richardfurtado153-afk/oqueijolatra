@@ -1,17 +1,14 @@
+import type { Metadata } from 'next'
 import { getServerSession } from 'next-auth'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { formatPrice } from '@/lib/utils'
+import { ORDER_STATUS_LABELS } from '@/types'
 
-const STATUS_LABELS: Record<string, { label: string; color: string }> = {
-  PENDING: { label: 'Pendente', color: 'bg-yellow-100 text-yellow-800' },
-  PAID: { label: 'Pago', color: 'bg-green-100 text-green-800' },
-  PROCESSING: { label: 'Processando', color: 'bg-blue-100 text-blue-800' },
-  SHIPPED: { label: 'Enviado', color: 'bg-purple-100 text-purple-800' },
-  DELIVERED: { label: 'Entregue', color: 'bg-green-100 text-green-800' },
-  CANCELLED: { label: 'Cancelado', color: 'bg-red-100 text-red-800' },
+export const metadata: Metadata = {
+  title: 'Meus Pedidos',
 }
 
 export default async function OrdersPage() {
@@ -41,7 +38,11 @@ export default async function OrdersPage() {
 
       {orders.length === 0 ? (
         <div className="text-center py-16">
-          <p className="text-stone-500 mb-4">Voce ainda nao fez nenhum pedido.</p>
+          <svg xmlns="http://www.w3.org/2000/svg" className="w-16 h-16 mx-auto text-stone-300 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+          </svg>
+          <p className="text-lg font-medium text-stone-600 mb-1">Nenhum pedido ainda</p>
+          <p className="text-sm text-stone-400 mb-4">Quando voce fizer um pedido, ele aparecera aqui.</p>
           <Link
             href="/"
             className="inline-block bg-amber-600 text-white font-semibold px-6 py-2.5 rounded-lg hover:bg-amber-700 transition-colors"
@@ -52,7 +53,7 @@ export default async function OrdersPage() {
       ) : (
         <div className="space-y-3">
           {orders.map((order) => {
-            const statusInfo = STATUS_LABELS[order.status] || { label: order.status, color: 'bg-stone-100 text-stone-800' }
+            const statusInfo = ORDER_STATUS_LABELS[order.status] || { label: order.status, color: 'bg-stone-100 text-stone-800' }
             return (
               <Link
                 key={order.id}
